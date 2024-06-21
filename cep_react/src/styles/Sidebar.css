@@ -1,0 +1,26 @@
+/* Sidebar.css */
+
+.drawer {
+    width: 240px;
+    flex-shrink: 0;
+  }
+  
+  .drawerPaper {
+    width: 240px;
+    box-sizing: border-box;
+    background-color: #1e272e;
+    color: white;
+  }
+  
+  .avatar {
+    margin-bottom: 16px;
+    background-color: #1976d2; 
+  }
+  
+  .usernameTitle {
+    font-weight: bold;
+  }
+  
+  .listItemIcon {
+    color: white;
+  }

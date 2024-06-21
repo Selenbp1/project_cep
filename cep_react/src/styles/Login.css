@@ -1,0 +1,33 @@
+/* styles/Login.css */
+
+.login-container {
+    margin-top: 300px;
+    padding: 16px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background-color: white;
+  }
+  
+  .login-title {
+    margin-bottom: 16px;
+  }
+  
+  .error-alert {
+    margin-bottom: 16px;
+  }
+  
+  .login-form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-input {
+    margin-bottom: 16px;
+  }
+  
+  .form-button {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+  }
+  
