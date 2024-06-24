@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Button, Grid, Card, CardContent, Typography, CardActions, Box } from '@mui/material';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Button, Grid, Card, CardContent, Typography, CardActions, Box, Pagination } from '@mui/material';
 import codeService from '../../services/codeService';
 import CodeDetailModal from './CodeDetailModal';
+import '../../styles/Scroll.css'; 
 
 const CodeManage = () => {
   const [codes, setCodes] = useState([]);
@@ -10,14 +11,34 @@ const CodeManage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpperCode, setIsUpperCode] = useState(true);
   const [viewedParentCodeId, setViewedParentCodeId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [subPage, setSubPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [subTotal, setSubTotal] = useState(0);
+
+
+  const fetchCodes = useCallback(async () => {
+    const { codes, total } = await codeService.getCodes(page, pageSize);
+    setCodes(codes);
+    setTotal(total);
+  }, [page, pageSize]);
+ 
+  const fetchSubCodes = useCallback(async (parentCodeId) => {
+    const { subCodes, total } = await codeService.getSubCodes(parentCodeId, subPage, pageSize);
+    setSubCodes(subCodes);
+    setSubTotal(total);
+  }, [subPage, pageSize]);
 
   useEffect(() => {
-    const fetchCodes = async () => {
-      const codes = await codeService.getCodes();
-      setCodes(codes);
-    };
     fetchCodes();
-  }, []);
+  }, [fetchCodes]);
+
+  useEffect(() => {
+    if (viewedParentCodeId !== null) {
+      fetchSubCodes(viewedParentCodeId);
+    }
+  }, [viewedParentCodeId, fetchSubCodes]);
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this code?')) {
@@ -52,68 +73,103 @@ const CodeManage = () => {
       const subCodes = await codeService.getSubCodes(id);
       setSubCodes(subCodes);
       setViewedParentCodeId(id);
+      fetchSubCodes(id);
     }
   };
 
+  const totalPages = Math.ceil(total / pageSize);
+  const subTotalPages = Math.ceil(subTotal / pageSize);
+
+  const handlePageChange = (event, value) => {
+    setPage(value);
+  };
+
+  const handleSubPageChange = (event, value) => {
+    setSubPage(value);
+  };
+
   return (
-    <Box>
-      <Box className="title-container">
-        <Typography variant="h4" gutterBottom>공통 코드 관리</Typography>
+    <div className="scroll-container">
+      <Box>
+        <Box className="title-container">
+          <Typography variant="h4" gutterBottom>공통 코드 관리</Typography>
+        </Box>
+        <Button variant="contained" color="primary" onClick={handleCreate} sx={{ mb: 2 }}>
+          등록
+        </Button>
+        <Grid container spacing={3}>
+          {codes.map(code => (
+            <Grid item xs={12} sm={6} md={4} key={code.id}>
+              <Card style={{ opacity: viewedParentCodeId && code.id !== viewedParentCodeId ? 0.5 : 1 }}>
+                <CardContent>
+                  <Typography variant="h5">No. {code.id}</Typography>
+                  <Typography variant="body2" color="textSecondary">상위코드: {code.upperCode}</Typography>
+                  <Typography variant="body2" color="textSecondary">코드명: {code.codeName}</Typography>
+                  <Typography variant="body2" color="textSecondary">날짜: {code.date}</Typography>
+                </CardContent>
+                <CardActions>
+                  <Button size="small" onClick={() => handleEdit(code.id, true)}>상세보기</Button>
+                  <Button size="small" color="error" onClick={() => handleDelete(code.id)}>삭제</Button>
+                  <Button size="small" onClick={() => handleViewSubCodes(code.id)}>
+                    {viewedParentCodeId === code.id ? '하위코드 숨기기' : '하위코드 보기'}
+                  </Button>
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+        <Box display="flex" justifyContent="center" mt={2}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={handlePageChange}
+            color="primary"
+            showFirstButton
+            showLastButton
+          />
+        </Box>
+        {subCodes.length > 0 && (
+          <>
+            <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>하위코드 리스트</Typography>
+            <Grid container spacing={3}>
+              {subCodes.map(subCode => (
+                <Grid item xs={12} sm={6} md={4} key={subCode.id}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h5">No. {subCode.id}</Typography>
+                      <Typography variant="body2" color="textSecondary">하위코드: {subCode.upperCode}</Typography>
+                      <Typography variant="body2" color="textSecondary">코드명: {subCode.codeName}</Typography>
+                      <Typography variant="body2" color="textSecondary">날짜: {subCode.date}</Typography>
+                    </CardContent>
+                    <CardActions>
+                      <Button size="small" onClick={() => handleEdit(subCode.id, false)}>상세보기</Button>
+                      <Button size="small" color="error" onClick={() => handleDelete(subCode.id)}>삭제</Button>
+                    </CardActions>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+            <Box display="flex" justifyContent="center" mt={2}>
+              <Pagination
+                count={subTotalPages}
+                page={subPage}
+                onChange={handleSubPageChange}
+                color="primary"
+                showFirstButton
+                showLastButton
+              />
+            </Box>
+          </>
+        )}
+        <CodeDetailModal
+          open={isModalOpen}
+          handleClose={handleModalClose}
+          codeId={selectedCodeId}
+          isUpperCode={isUpperCode}
+        />
       </Box>
-      <Button variant="contained" color="primary" onClick={handleCreate} sx={{ mb: 2 }}>
-        등록
-      </Button>
-      <Grid container spacing={3}>
-        {codes.map(code => (
-          <Grid item xs={12} sm={6} md={4} key={code.id}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5">No. {code.id}</Typography>
-                <Typography variant="body2" color="textSecondary">상위코드: {code.upperCode}</Typography>
-                <Typography variant="body2" color="textSecondary">코드명: {code.codeName}</Typography>
-                <Typography variant="body2" color="textSecondary">날짜: {code.date}</Typography>
-              </CardContent>
-              <CardActions>
-                <Button size="small" onClick={() => handleEdit(code.id, true)}>상세보기</Button>
-                <Button size="small" color="error" onClick={() => handleDelete(code.id)}>삭제</Button>
-                <Button size="small" onClick={() => handleViewSubCodes(code.id)}>
-                  {viewedParentCodeId === code.id ? '하위코드 숨기기' : '하위코드 보기'}
-                </Button>
-              </CardActions>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-      {subCodes.length > 0 && (
-        <>
-          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>하위코드 리스트</Typography>
-          <Grid container spacing={3}>
-            {subCodes.map(subCode => (
-              <Grid item xs={12} sm={6} md={4} key={subCode.id}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h5">No. {subCode.id}</Typography>
-                    <Typography variant="body2" color="textSecondary">하위코드: {subCode.upperCode}</Typography>
-                    <Typography variant="body2" color="textSecondary">코드명: {subCode.codeName}</Typography>
-                    <Typography variant="body2" color="textSecondary">날짜: {subCode.date}</Typography>
-                  </CardContent>
-                  <CardActions>
-                    <Button size="small" onClick={() => handleEdit(subCode.id, false)}>상세보기</Button>
-                    <Button size="small" color="error" onClick={() => handleDelete(subCode.id)}>삭제</Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </>
-      )}
-      <CodeDetailModal
-        open={isModalOpen}
-        handleClose={handleModalClose}
-        codeId={selectedCodeId}
-        isUpperCode={isUpperCode}
-      />
-    </Box>
+    </div>
+    
   );
 };
 

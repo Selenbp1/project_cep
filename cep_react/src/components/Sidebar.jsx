@@ -52,8 +52,15 @@ const Sidebar = ({ isLoggedIn, username }) => {
               {open ? <ExpandLess /> : <ExpandMore />}
             </ListItemButton>
 
+            <>
             {open && (
               <List component="div" disablePadding>
+                <ListItemButton sx={{ pl: 4 }} component={Link} to="/rules/list">
+                  <ListItemIcon className="listItemIcon">
+                    <PlaylistAddCheck />
+                  </ListItemIcon>
+                  <ListItemText primary="룰 리스트" />
+                </ListItemButton>
                 <ListItemButton sx={{ pl: 4 }} component={Link} to="/rules/results">
                   <ListItemIcon className="listItemIcon">
                     <PlaylistAddCheck />
@@ -62,7 +69,8 @@ const Sidebar = ({ isLoggedIn, username }) => {
                 </ListItemButton>
               </List>
             )}
-
+            </>
+            
             <ListItemButton component={Link} to="/codes">
               <ListItemIcon className="listItemIcon">
                 <Code />

@@ -1,30 +1,44 @@
-import React, { useState } from 'react';
-import { Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Modal, Box } from '@mui/material';
+// RuleManage.js
+import React, { useState, useEffect, useCallback } from 'react';
+import { Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Modal, Box, Pagination } from '@mui/material';
 import RuleModal from './RuleModal';
-import { v4 as uuidv4 } from 'uuid';
-
-const initialRules = [
-  { id: uuidv4(), name: 'Rule1', equipment: 'Equipment1', item: 'Item1', algorithm: 'Algorithm1', featureValue: 'Function1', alert: true, active: true },
-  { id: uuidv4(), name: 'Rule2', equipment: 'Equipment2', item: 'Item2', algorithm: 'Algorithm2', featureValue: 'Function2', alert: false, active: true },
-];
+import { getRules, addRule, editRule, deleteRule } from '../../services/ruleService';
+import '../../styles/Scroll.css'; 
 
 const RuleManage = () => {
-  const [rules, setRules] = useState(initialRules);
+  const [rules, setRules] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRule, setSelectedRule] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const totalPages = Math.ceil(total / pageSize);
 
-  const handleAddRule = (newRule) => {
-    setRules([...rules, { ...newRule, id: uuidv4() }]);
+  const fetchRules = useCallback(async () => {
+    const { rules, total } = await getRules(page, pageSize);
+    setRules(rules);
+    setTotal(total);
+  }, [page, pageSize]);
+
+  useEffect(() => {
+    fetchRules();
+  }, [fetchRules]);
+
+  const handleAddRule = async (newRule) => {
+    const addedRule = await addRule(newRule);
+    setRules((prevRules) => [...prevRules, addedRule]);
     setIsModalOpen(false);
   };
 
-  const handleEditRule = (updatedRule) => {
-    setRules(rules.map(rule => rule.id === updatedRule.id ? updatedRule : rule));
+  const handleEditRule = async (updatedRule) => {
+    const editedRule = await editRule(updatedRule);
+    setRules((prevRules) => prevRules.map(rule => rule.id === editedRule.id ? editedRule : rule));
     setIsModalOpen(false);
   };
 
-  const handleDeleteRule = (ruleId) => {
-    setRules(rules.filter(rule => rule.id !== ruleId));
+  const handleDeleteRule = async (ruleId) => {
+    await deleteRule(ruleId);
+    setRules((prevRules) => prevRules.filter(rule => rule.id !== ruleId));
   };
 
   const openModal = (rule = null) => {
@@ -32,8 +46,13 @@ const RuleManage = () => {
     setIsModalOpen(true);
   };
 
+  const handlePageChange = (event, value) => {
+    setPage(value);
+    setSelectedRule(null);
+  };
+
   return (
-    <div>
+    <div className="scroll-container">
       <Box className="title-container">
         <Typography variant="h4" gutterBottom>룰 관리</Typography>
       </Box>
@@ -76,6 +95,17 @@ const RuleManage = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      <Box display="flex" justifyContent="center" mt={2}>
+        <Pagination
+          count={totalPages}
+          page={page}
+          onChange={handlePageChange}
+          color="primary"
+          size="large"
+          showFirstButton
+          showLastButton
+        />
+      </Box>
       <Modal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}

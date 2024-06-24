@@ -4,7 +4,20 @@ const users = [
     { id: 1, userId: 'user1', name: 'John Doe', email: 'john.doe@example.com', contact: '123-456-7890' },
     { id: 2, userId: 'user2', name: 'Jane Smith', email: 'jane.smith@example.com', contact: '987-654-3210' },
     { id: 3, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
-    // Add more users as needed
+    { id: 4, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
+    { id: 5, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
+    { id: 6, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
+    { id: 7, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
+    { id: 8, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
+    { id: 9, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
+    { id: 10, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
+    { id: 11, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
+    { id: 12, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
+    { id: 13, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
+    { id: 14, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
+    { id: 15, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
+    { id: 16, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
+    { id: 17, userId: 'user3', name: 'Mike Johnson', email: 'mike.johnson@example.com', contact: '555-123-4567' },
   ];
   
   const getUsers = async (page, pageSize) => {

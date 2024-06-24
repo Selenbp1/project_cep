@@ -1,29 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Typography, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper, Collapse, Box, IconButton } from '@mui/material';
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import Pagination from '@mui/material/Pagination';
-
-const tempData = [
-  { id: 1, ruleName: 'Rule 1', equipment: 'Equipment A', item: 'Item X', algorithm: 'Algorithm 1', function: 'Function A', totalData: 100, normalData: 80, abnormalData: 20 },
-  { id: 2, ruleName: 'Rule 2', equipment: 'Equipment B', item: 'Item Y', algorithm: 'Algorithm 2', function: 'Function B', totalData: 120, normalData: 100, abnormalData: 20 },
-  // Add more data as needed
-];
-
-const tempDetailData = [
-  { id: 1, ruleId: 1, createdAt: '2024-06-21', rawValue: 100, featureValue: 'Value A', details: 'Details A' },
-  { id: 2, ruleId: 1, createdAt: '2024-06-20', rawValue: 120, featureValue: 'Value B', details: 'Details B' },
-  { id: 3, ruleId: 2, createdAt: '2024-06-19', rawValue: 110, featureValue: 'Value C', details: 'Details C' },
-  { id: 4, ruleId: 2, createdAt: '2024-06-18', rawValue: 130, featureValue: 'Value D', details: 'Details D' },
-  // Add more detail data as needed
-];
+import { fetchRuleData, fetchDetailDataByRuleId } from '../../services/ruleResultListService';
+import '../../styles/Scroll.css'; 
 
 const RuleResultsList = () => {
+  const [ruleData, setRuleData] = useState([]);
   const [selectedRule, setSelectedRule] = useState(null);
   const [page, setPage] = useState(1);
   const [detailPages, setDetailPages] = useState({});
+  const [detailData, setDetailData] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  const itemsPerPage = 5;
-  const detailItemsPerPage = 2;
+  const itemsPerPage = 10;
+  const detailItemsPerPage = 5;
+
+  useEffect(() => {
+    const loadRuleData = async () => {
+      setLoading(true);
+      const data = await fetchRuleData();
+      setRuleData(data);
+      setLoading(false);
+    };
+
+    loadRuleData();
+  }, []);
 
   const handlePageChange = (event, value) => {
     setPage(value);
@@ -37,9 +39,7 @@ const RuleResultsList = () => {
     }));
   };
 
-  const slicedData = tempData.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-
-  const handleRuleClick = (rule) => {
+  const handleRuleClick = async (rule) => {
     if (selectedRule === rule) {
       setSelectedRule(null);
     } else {
@@ -47,15 +47,25 @@ const RuleResultsList = () => {
       if (!detailPages[rule.id]) {
         setDetailPages((prev) => ({ ...prev, [rule.id]: 1 }));
       }
+      if (!detailData[rule.id]) {
+        const data = await fetchDetailDataByRuleId(rule.id);
+        setDetailData((prev) => ({ ...prev, [rule.id]: data }));
+      }
     }
   };
 
+  const slicedData = ruleData.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
   const getDetailDataByRuleId = (ruleId) => {
-    return tempDetailData.filter((data) => data.ruleId === ruleId);
+    return detailData[ruleId] || [];
   };
 
+  if (loading) {
+    return <Typography variant="h6">Loading...</Typography>;
+  }
+
   return (
-    <div>
+    <div className="scroll-container">
       <Box className="title-container">
         <Typography variant="h4" gutterBottom>룰 결과 리스트</Typography>
       </Box>
@@ -103,7 +113,7 @@ const RuleResultsList = () => {
                 <TableRow>
                   <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={10}>
                     <Collapse in={selectedRule === rule} timeout="auto" unmountOnExit>
-                      <Box margin={1} bgcolor="#f9f9f9" borderRadius={4} p={2}>
+                      <Box margin={1} bgcolor="#f9f9d8" borderRadius={4} p={2}>
                         <Typography variant="h6" gutterBottom>룰 처리 결과 데이터</Typography>
                         <TableContainer component={Paper}>
                           <Table>
@@ -149,7 +159,7 @@ const RuleResultsList = () => {
       </TableContainer>
       <Box display="flex" justifyContent="center">
         <Pagination
-          count={Math.ceil(tempData.length / itemsPerPage)}
+          count={Math.ceil(ruleData.length / itemsPerPage)}
           page={page}
           onChange={handlePageChange}
           color="primary"

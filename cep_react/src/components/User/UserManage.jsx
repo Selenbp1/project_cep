@@ -4,6 +4,7 @@ import { Edit, Delete } from '@mui/icons-material';
 import Pagination from '@mui/material/Pagination';
 import userService from '../../services/userService'; 
 import UserDetailModal from './UserDetailModal'; 
+import '../../styles/Scroll.css'; 
 
 const UserManage = () => {
   const [users, setUsers] = useState([]);
@@ -47,7 +48,7 @@ const UserManage = () => {
   };
 
   return (
-    <div>
+    <div className="scroll-container">
       <Box className="title-container">
         <Typography variant="h4" gutterBottom>사용자 정보 관리</Typography>
       </Box>

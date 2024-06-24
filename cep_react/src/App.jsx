@@ -71,7 +71,7 @@ const App = () => {
               </ProtectedRoute>
             } />
 
-            <Route path="/rules" element={
+            <Route path="/rules/list" element={
               <ProtectedRoute isLoggedIn={isLoggedIn}>
                 <RuleManage />
               </ProtectedRoute>
