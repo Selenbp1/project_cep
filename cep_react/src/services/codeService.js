@@ -1,63 +1,83 @@
-const exampleCodes = [
-    { id: 1, upperCode: 'U001', codeName: 'Code 1', date: '2023-01-01', parentCode: null },
-    { id: 2, upperCode: 'U002', codeName: 'Code 2', date: '2023-02-01', parentCode: null },
-    { id: 3, upperCode: 'U003', codeName: 'Code 3', date: '2023-03-01', parentCode: null },
-    { id: 4, upperCode: 'S001', codeName: 'Sub Code 1', date: '2023-03-01', parentCode: 1 },
-    { id: 5, upperCode: 'S002', codeName: 'Sub Code 2', date: '2023-04-01', parentCode: 1 },
-    { id: 6, upperCode: 'S003', codeName: 'Sub Code 3', date: '2023-05-01', parentCode: 1 },
-    { id: 7, upperCode: 'S004', codeName: 'Sub Code 4', date: '2023-04-01', parentCode: 2 },
-    { id: 8, upperCode: 'S005', codeName: 'Sub Code 5', date: '2023-05-01', parentCode: 2 },
-    { id: 9, upperCode: 'S006', codeName: 'Sub Code 6', date: '2023-06-01', parentCode: 3 },
-    { id: 10, upperCode: 'S007', codeName: 'Sub Code 7', date: '2023-06-01', parentCode: 3 },
-    { id: 11, upperCode: 'S008', codeName: 'Sub Code 8', date: '2023-06-01', parentCode: 3 },
-  ];
-  
-  
-  const getCodes = async (page, pageSize) => {
-    const startIndex = (page - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const paginatedCodes = exampleCodes.filter(code => code.parentCode === null).slice(startIndex, endIndex);
-    return { codes: paginatedCodes, total: exampleCodes.filter(code => code.parentCode === null).length };
-  };
-  
-  const getSubCodes = async (parentCodeId, page, pageSize) => {
-    const subCodes = exampleCodes.filter(code => code.parentCode === parentCodeId);
-    const startIndex = (page - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const paginatedSubCodes = subCodes.slice(startIndex, endIndex);
-    return { subCodes: paginatedSubCodes, total: subCodes.length };
-  };
-  
-  const getCode = async (id) => {
-    return exampleCodes.find(code => code.id === parseInt(id));
-  };
-  
-  const createCode = async (code) => {
-    const newCode = { ...code, id: exampleCodes.length + 1 };
-    exampleCodes.push(newCode);
-    return newCode;
-  };
-  
-  const updateCode = async (id, code) => {
-    const index = exampleCodes.findIndex(c => c.id === parseInt(id));
-    exampleCodes[index] = { ...exampleCodes[index], ...code };
-    return exampleCodes[index];
-  };
-  
-  const deleteCode = async (id) => {
-    const index = exampleCodes.findIndex(c => c.id === parseInt(id));
-    const deletedCode = exampleCodes.splice(index, 1);
-    return deletedCode;
-  };
-  
-  const codeService = {
-    getCodes,
-    getSubCodes,
-    getCode,
-    createCode,
-    updateCode,
-    deleteCode,
-  };
-  
-  export default codeService;
-  
+
+import axios from 'axios';
+
+const BASE_URL = 'http://localhost:9090';
+
+const instance = axios.create({
+  baseURL: BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+const getCodes = async (page, pageSize) => {
+  try {
+    const response = await instance.get(`/codes?page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch codes:', error.message);
+    return { codes: [], total: 0 };
+  }
+};
+
+const getSubCodes = async (parentCodeId, page, pageSize) => {
+  try {
+    const response = await instance.get(`/subcodes?parentCodeId=${parentCodeId}&page=${page}&pageSize=${pageSize}`);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch subcodes:', error.message);
+    return { subCodes: [], total: 0 };
+  }
+};
+
+const getCode = async (id) => {
+  try {
+    const response = await instance.get(`/code/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch code:', error.message);
+    return null;
+  }
+};
+
+const createCode = async (code) => {
+  try {
+    const response = await instance.post('/code', code);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to create code:', error.message);
+    return null;
+  }
+};
+
+const updateCode = async (id, code) => {
+  try {
+    const response = await instance.put(`/code/${id}`, code);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to update code:', error.message);
+    return null;
+  }
+};
+
+const deleteCode = async (id) => {
+  try {
+    await instance.delete(`/code/${id}`);
+    return true; 
+  } catch (error) {
+    console.error('Failed to delete code:', error.message);
+    return false;
+  }
+};
+
+const codeService = {
+  getCodes,
+  getSubCodes,
+  getCode,
+  createCode,
+  updateCode,
+  deleteCode,
+};
+
+export default codeService;

@@ -15,30 +15,46 @@ const RuleManage = () => {
   const totalPages = Math.ceil(total / pageSize);
 
   const fetchRules = useCallback(async () => {
-    const { rules, total } = await getRules(page, pageSize);
-    setRules(rules);
-    setTotal(total);
+    try {
+      const { rules: fetchedRules, total: fetchedTotal } = await getRules(page, pageSize);
+      setRules(fetchedRules);
+      setTotal(fetchedTotal);
+    } catch (error) {
+      console.error('Error fetching rules:', error.message);
+    }
   }, [page, pageSize]);
-
+  
   useEffect(() => {
     fetchRules();
-  }, [fetchRules]);
+  }, [fetchRules, page]);
 
   const handleAddRule = async (newRule) => {
-    const addedRule = await addRule(newRule);
-    setRules((prevRules) => [...prevRules, addedRule]);
-    setIsModalOpen(false);
+    try {
+      const addedRule = await addRule(newRule);
+      setRules((prevRules) => [...prevRules, addedRule]); // 새로운 룰 추가
+      setIsModalOpen(false); // 모달 닫기
+    } catch (error) {
+      console.error('Error adding rule:', error.message);
+    }
   };
-
+  
   const handleEditRule = async (updatedRule) => {
-    const editedRule = await editRule(updatedRule);
-    setRules((prevRules) => prevRules.map(rule => rule.id === editedRule.id ? editedRule : rule));
-    setIsModalOpen(false);
+    try {
+      const editedRule = await editRule(updatedRule);
+      setRules((prevRules) => prevRules.map(rule => rule.id === editedRule.id ? editedRule : rule)); // 수정된 룰 업데이트
+      setIsModalOpen(false); // 모달 닫기
+    } catch (error) {
+      console.error('Error editing rule:', error.message);
+    }
   };
-
+  
   const handleDeleteRule = async (ruleId) => {
-    await deleteRule(ruleId);
-    setRules((prevRules) => prevRules.filter(rule => rule.id !== ruleId));
+    try {
+      await deleteRule(ruleId);
+      setRules((prevRules) => prevRules.filter(rule => rule.id !== ruleId)); // 삭제된 룰 제거
+    } catch (error) {
+      console.error('Error deleting rule:', error.message);
+    }
   };
 
   const openModal = (rule = null) => {

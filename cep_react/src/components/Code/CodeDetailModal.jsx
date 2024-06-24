@@ -6,14 +6,36 @@ const CodeDetailModal = ({ open, handleClose, codeId, isUpperCode }) => {
   const [code, setCode] = useState(null);
 
   useEffect(() => {
-    const fetchCode = async () => {
-      if (codeId) {
-        const codeData = await codeService.getCode(codeId);
-        setCode(codeData);
-      }
-    };
-    fetchCode();
+    if (codeId) {
+      // 코드 ID가 주어졌을 때 기존 코드를 불러옴
+      fetchCode(codeId);
+    } else {
+      // 코드 ID가 없으면 새로운 코드 객체를 초기화
+      setCode({
+        upperCode: '', // 상위 코드 초기값
+        codeName: '', // 코드명 초기값
+        description: '', // 설명 초기값
+        isActive: false, // 사용 여부 초기값
+        subCode1: '', // 서브 코드 초기값
+        subCode2: '', // 서브 코드 초기값
+        subCode3: '', // 서브 코드 초기값
+        subCode4: '', // 서브 코드 초기값
+        refCode1: '', // 참조 코드 초기값
+        refCode2: '', // 참조 코드 초기값
+        refCode3: '', // 참조 코드 초기값
+        refCode4: '', // 참조 코드 초기값
+      });
+    }
   }, [codeId]);
+
+  const fetchCode = async (id) => {
+    try {
+      const codeData = await codeService.getCode(id);
+      setCode(codeData);
+    } catch (error) {
+      console.error('Error fetching code:', error.message);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -24,9 +46,21 @@ const CodeDetailModal = ({ open, handleClose, codeId, isUpperCode }) => {
   };
 
   const handleSave = async () => {
-    await codeService.updateCode(codeId, code);
-    handleClose();
+    try {
+      if (codeId) {
+        // 코드 ID가 있으면 수정
+        await codeService.updateCode(codeId, code);
+      } else {
+        // 코드 ID가 없으면 등록
+        await codeService.createCode(code);
+      }
+      handleClose();
+    } catch (error) {
+      console.error('Error saving code:', error.message);
+    }
   };
+
+  
 
   return (
     <Modal open={open} onClose={handleClose}>

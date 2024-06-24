@@ -15,22 +15,30 @@ const UserManage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchUsers = useCallback(async () => {
-    const { users, total } = await userService.getUsers(page, pageSize);
-    setUsers(users);
-    setTotal(total);
-  }, [page, pageSize]);
+    try {
+      const { users, total } = await userService.getUsers(page, pageSize);
+      setUsers(users);
+      setTotal(total);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    }, [page, pageSize]);
 
   useEffect(() => {
-    fetchUsers(); // Initial fetch
+    fetchUsers(); 
   }, [fetchUsers]);
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      await userService.deleteUser(id);
-      fetchUsers();
+    try {
+      if (window.confirm('Are you sure you want to delete this user?')) {
+        await userService.deleteUser(id);
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error(`Error deleting user with ID ${id}:`, error);
     }
   };
-
+  
   const openModal = (user) => {
     setSelectedUser(user);
     setIsModalOpen(true);

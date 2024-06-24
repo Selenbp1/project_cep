@@ -3,7 +3,7 @@ import { Typography, TableContainer, Table, TableHead, TableRow, TableCell, Tabl
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import Pagination from '@mui/material/Pagination';
 import { fetchRuleData, fetchDetailDataByRuleId } from '../../services/ruleResultListService';
-import '../../styles/Scroll.css'; 
+import '../../styles/Scroll.css';
 
 const RuleResultsList = () => {
   const [ruleData, setRuleData] = useState([]);
@@ -19,9 +19,14 @@ const RuleResultsList = () => {
   useEffect(() => {
     const loadRuleData = async () => {
       setLoading(true);
-      const data = await fetchRuleData();
-      setRuleData(data);
-      setLoading(false);
+      try {
+        const data = await fetchRuleData();
+        setRuleData(data);
+      } catch (error) {
+        console.error('Error loading rule data:', error.message);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadRuleData();
@@ -48,8 +53,12 @@ const RuleResultsList = () => {
         setDetailPages((prev) => ({ ...prev, [rule.id]: 1 }));
       }
       if (!detailData[rule.id]) {
-        const data = await fetchDetailDataByRuleId(rule.id);
-        setDetailData((prev) => ({ ...prev, [rule.id]: data }));
+        try {
+          const data = await fetchDetailDataByRuleId(rule.id);
+          setDetailData((prev) => ({ ...prev, [rule.id]: data }));
+        } catch (error) {
+          console.error(`Error loading detail data for rule ID ${rule.id}:`, error.message);
+        }
       }
     }
   };

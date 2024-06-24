@@ -1,8 +1,6 @@
-// src/components/User/UserDetailModal.jsx
-
 import React, { useState } from 'react';
 import { Modal, Box, TextField, Button, FormControlLabel, Checkbox } from '@mui/material';
-import userService from '../../services/userService'; // 경로 확인 필요
+import userService from '../../services/userService';
 
 const UserDetailModal = ({ user, onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -22,12 +20,16 @@ const UserDetailModal = ({ user, onClose, onSave }) => {
   };
 
   const handleSubmit = async () => {
-    if (user) {
-      await userService.updateUser(user.id, formData);
-    } else {
-      await userService.createUser(formData);
+    try {
+      if (user) {
+        await userService.updateUser(user.id, formData);
+      } else {
+        await userService.createUser(formData);
+      }
+      onSave();
+    } catch (error) {
+      console.error('Error saving user:', error);
     }
-    onSave();
   };
 
   return (

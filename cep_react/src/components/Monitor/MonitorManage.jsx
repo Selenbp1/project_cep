@@ -8,12 +8,24 @@ const MonitorManage = () => {
   const [monthlyData, setMonthlyData] = useState([]);
   const [dailyData, setDailyData] = useState([]);
   const [realTimeData, setRealTimeData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      setMonthlyData(await monitorService.getMonthlyData());
-      setDailyData(await monitorService.getDailyData());
-      setRealTimeData(await monitorService.getRealTimeData());
+      try {
+        const monthly = await monitorService.getMonthlyData();
+        const daily = await monitorService.getDailyData();
+        const realTime = await monitorService.getRealTimeData();
+        setMonthlyData(monthly);
+        setDailyData(daily);
+        setRealTimeData(realTime);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching data:', error.message);
+        setError('Failed to fetch data. Please check your network connection.'); // 네트워크 오류 메시지 추가
+        setLoading(false);
+      }
     };
     fetchData();
   }, []);
@@ -27,6 +39,14 @@ const MonitorManage = () => {
   };
 
   const totalMonthlyData = calculateTotal(monthlyData);
+
+  if (loading) {
+    return <Typography variant="h6">Loading...</Typography>;
+  }
+
+  if (error) {
+    return <Typography variant="h6" color="error">{error}</Typography>; // 오류 메시지 출력
+  }
 
   return (
     <Box sx={{ backgroundColor: '#f5f5f5', padding: '20px', borderRadius: '8px' }}>
@@ -54,7 +74,7 @@ const MonitorManage = () => {
                   ))}
                 </Pie>
                 <Tooltip 
-                formatter={(value, name, props) => [`${calculatePercentage(value, totalMonthlyData)}%`, name]} 
+                  formatter={(value, name, props) => [`${calculatePercentage(value, totalMonthlyData)}%`, name]} 
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -66,7 +86,7 @@ const MonitorManage = () => {
 
         <Grid item xs={12} md={6}>
           <Paper className="monitor-paper" sx={{ height: '100%' }}>
-            <Typography variant="h6" mb={6}>금일 데이터 처리 현황</Typography>
+            <Typography variant="h6">금일 데이터 처리 현황</Typography>
             <TableContainer>
               <Table>
                 <TableHead>

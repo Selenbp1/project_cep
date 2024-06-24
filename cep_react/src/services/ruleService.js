@@ -1,46 +1,59 @@
-import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
 
-const initialRules = [
-    { id: uuidv4(), name: 'Rule1', equipment: 'Equipment1', item: 'Item1', algorithm: 'Algorithm1', featureValue: 'Function1', alert: true, active: true },
-    { id: uuidv4(), name: 'Rule2', equipment: 'Equipment2', item: 'Item2', algorithm: 'Algorithm2', featureValue: 'Function2', alert: false, active: true },
-    { id: uuidv4(), name: 'Rule2', equipment: 'Equipment2', item: 'Item2', algorithm: 'Algorithm2', featureValue: 'Function2', alert: false, active: true },
-    { id: uuidv4(), name: 'Rule2', equipment: 'Equipment2', item: 'Item2', algorithm: 'Algorithm2', featureValue: 'Function2', alert: false, active: true },
-    { id: uuidv4(), name: 'Rule2', equipment: 'Equipment2', item: 'Item2', algorithm: 'Algorithm2', featureValue: 'Function2', alert: false, active: true },
-    { id: uuidv4(), name: 'Rule2', equipment: 'Equipment2', item: 'Item2', algorithm: 'Algorithm2', featureValue: 'Function2', alert: false, active: true },
-    { id: uuidv4(), name: 'Rule2', equipment: 'Equipment2', item: 'Item2', algorithm: 'Algorithm2', featureValue: 'Function2', alert: false, active: true },
-    { id: uuidv4(), name: 'Rule2', equipment: 'Equipment2', item: 'Item2', algorithm: 'Algorithm2', featureValue: 'Function2', alert: false, active: true },
-    { id: uuidv4(), name: 'Rule2', equipment: 'Equipment2', item: 'Item2', algorithm: 'Algorithm2', featureValue: 'Function2', alert: false, active: true },
-    { id: uuidv4(), name: 'Rule2', equipment: 'Equipment2', item: 'Item2', algorithm: 'Algorithm2', featureValue: 'Function2', alert: false, active: true },
-    { id: uuidv4(), name: 'Rule2', equipment: 'Equipment2', item: 'Item2', algorithm: 'Algorithm2', featureValue: 'Function2', alert: false, active: true },
-  ];
+const BASE_URL = 'http://localhost:9090';
+const API_URL = `${BASE_URL}/rules`;
 
-const getRules = async (page, pageSize) => {
-    const startIndex = (page - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const paginatedRules = initialRules.slice(startIndex, endIndex);
-    return { rules: paginatedRules, total: initialRules.length };
-  };
-  
-  const addRule = (newRule) => {
-    const rule = { ...newRule, id: uuidv4() };
-    initialRules.push(rule);
-    return rule;
-  };
-  
-  const editRule = (updatedRule) => {
-    const index = initialRules.findIndex(rule => rule.id === updatedRule.id);
-    if (index !== -1) {
-      initialRules[index] = updatedRule;
-    }
-    return updatedRule;
-  };
-  
-  const deleteRule = (ruleId) => {
-    const index = initialRules.findIndex(rule => rule.id === ruleId);
-    if (index !== -1) {
-      initialRules.splice(index, 1);
-    }
+const instance = axios.create({
+  baseURL: BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+export const getRules = async (page, pageSize) => {
+  try {
+    const response = await instance.get(API_URL, {
+      params: {
+        _page: page,
+        _limit: pageSize,
+      },
+    });
+    const total = Number(response.headers['x-total-count']);
+    const rules = response.data;
+    return { rules, total };
+  } catch (error) {
+    console.error('Error fetching rules:', error);
+    throw new Error('Failed to fetch rules');
+  }
+};
+
+export const addRule = async (newRule) => {
+  try {
+    const response = await instance.post(API_URL, newRule);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding rule:', error);
+    throw new Error('Failed to add rule');
+  }
+};
+
+export const editRule = async (updatedRule) => {
+  try {
+    const response = await instance.put(`${API_URL}/${updatedRule.id}`, updatedRule);
+    return response.data;
+  } catch (error) {
+    console.error('Error editing rule:', error);
+    throw new Error('Failed to edit rule');
+  }
+};
+
+export const deleteRule = async (ruleId) => {
+  try {
+    await instance.delete(`${API_URL}/${ruleId}`);
     return ruleId;
-  };
-  
-  export { getRules, addRule, editRule, deleteRule };
+  } catch (error) {
+    console.error('Error deleting rule:', error);
+    throw new Error('Failed to delete rule');
+  }
+};

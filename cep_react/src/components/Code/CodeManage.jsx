@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Grid, Card, CardContent, Typography, CardActions, Box, Pagination } from '@mui/material';
 import codeService from '../../services/codeService';
 import CodeDetailModal from './CodeDetailModal';
-import '../../styles/Scroll.css'; 
+import '../../styles/Scroll.css';
 
 const CodeManage = () => {
   const [codes, setCodes] = useState([]);
@@ -17,17 +17,24 @@ const CodeManage = () => {
   const [total, setTotal] = useState(0);
   const [subTotal, setSubTotal] = useState(0);
 
-
   const fetchCodes = useCallback(async () => {
-    const { codes, total } = await codeService.getCodes(page, pageSize);
-    setCodes(codes);
-    setTotal(total);
+    try {
+      const { codes, total } = await codeService.getCodes(page, pageSize);
+      setCodes(codes);
+      setTotal(total);
+    } catch (error) {
+      console.error('Failed to fetch codes:', error.message);
+    }
   }, [page, pageSize]);
- 
+
   const fetchSubCodes = useCallback(async (parentCodeId) => {
-    const { subCodes, total } = await codeService.getSubCodes(parentCodeId, subPage, pageSize);
-    setSubCodes(subCodes);
-    setSubTotal(total);
+    try {
+      const { subCodes, total } = await codeService.getSubCodes(parentCodeId, subPage, pageSize);
+      setSubCodes(subCodes);
+      setSubTotal(total);
+    } catch (error) {
+      console.error('Failed to fetch subcodes:', error.message);
+    }
   }, [subPage, pageSize]);
 
   useEffect(() => {
@@ -41,17 +48,24 @@ const CodeManage = () => {
   }, [viewedParentCodeId, fetchSubCodes]);
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this code?')) {
-      await codeService.deleteCode(id);
-      const updatedCodes = codes.filter(code => code.id !== id);
-      setCodes(updatedCodes);
-      setSubCodes([]);
-      setViewedParentCodeId(null);
+    if (window.confirm('정말로 이 코드를 삭제하시겠습니까?')) {
+      try {
+        await codeService.deleteCode(id);
+        const updatedCodes = codes.filter(code => code.id !== id);
+        setCodes(updatedCodes);
+        if (viewedParentCodeId === id) {
+          setSubCodes([]);
+          setViewedParentCodeId(null);
+        }
+      } catch (error) {
+        console.error('Failed to delete code:', error.message);
+      }
     }
   };
 
   const handleCreate = () => {
     setSelectedCodeId(null);
+    setIsUpperCode(true);
     setIsModalOpen(true);
   };
 
@@ -70,10 +84,13 @@ const CodeManage = () => {
       setSubCodes([]);
       setViewedParentCodeId(null);
     } else {
-      const subCodes = await codeService.getSubCodes(id);
-      setSubCodes(subCodes);
-      setViewedParentCodeId(id);
-      fetchSubCodes(id);
+      try {
+        const { subCodes } = await codeService.getSubCodes(id);
+        setSubCodes(subCodes);
+        setViewedParentCodeId(id);
+      } catch (error) {
+        console.error('Failed to fetch subcodes:', error.message);
+      }
     }
   };
 
@@ -158,7 +175,7 @@ const CodeManage = () => {
                 showFirstButton
                 showLastButton
               />
-            </Box>
+           </Box>
           </>
         )}
         <CodeDetailModal
@@ -169,7 +186,6 @@ const CodeManage = () => {
         />
       </Box>
     </div>
-    
   );
 };
 

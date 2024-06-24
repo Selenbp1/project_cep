@@ -1,31 +1,50 @@
+import axios from 'axios';
+
+const BASE_URL = 'http://localhost:9090';
+const API_URL = `${BASE_URL}/monitors`;
+
+const instance = axios.create({
+  baseURL: BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 const getMonthlyData = async () => {
-  return [
-    { name: '정상 데이터', value: 1000 },
-    { name: '비정상 데이터', value: 300 }
-  ];
+  try {
+    const response = await instance.get(`${API_URL}/monthly-data`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching monthly data:', error.message);
+    throw new Error('Failed to fetch monthly data. Please try again later.'); // 에러 메시지 개선
+  }
 };
 
 const getDailyData = async () => {
-  return [
-    { type: '전체 데이터', count: 100 },
-    { type: '정상 데이터', count: 50 },
-    { type: '비정상 데이터', count: 50 }
-  ];
+  try {
+    const response = await instance.get(`${API_URL}/daily-data`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching daily data:', error.message);
+    throw new Error('Failed to fetch daily data. Please try again later.'); // 에러 메시지 개선
+  }
 };
 
 const getRealTimeData = async () => {
-  return [
-    { time: '2024-06-21 12:00:00', total: 50, normal: 30, abnormal: 20 },
-    { time: '2024-06-21 12:01:00', total: 60, normal: 40, abnormal: 20 },
-    { time: '2024-06-21 12:02:00', total: 70, normal: 50, abnormal: 20 },
-    // 더 많은 데이터 포인트 추가 가능
-  ];
+  try {
+    const response = await instance.get(`${API_URL}/real-time-data`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching real-time data:', error.message);
+    throw new Error('Failed to fetch real-time data. Please try again later.'); // 에러 메시지 개선
+  }
 };
 
 const monitorService = {
   getMonthlyData,
   getDailyData,
-  getRealTimeData
+  getRealTimeData,
 };
 
 export default monitorService;

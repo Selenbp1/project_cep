@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Container, TextField, Button, Box, Typography, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/Login.css'; 
+import { login } from '../../services/loginService';
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
@@ -9,14 +10,15 @@ const Login = ({ onLogin }) => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (username === 'admin' && password === 'admin1234') {
+    try {
+      await login(username, password); 
       onLogin(username);
       const lastPath = localStorage.getItem('lastPath') || '/home';
       navigate(lastPath);
-    } else {
-      setError('Invalid username or password');
+    } catch (err) {
+      setError(err.message);
     }
   };
 
