@@ -2,57 +2,78 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Box, TextField, Button, FormControlLabel, Checkbox } from '@mui/material';
 import codeService from '../../services/codeService';
 
-const CodeDetailModal = ({ open, handleClose, codeId, isUpperCode }) => {
-  const [code, setCode] = useState(null);
+const CodeDetailModal = ({ open, handleClose, code }) => {
+  const [codeDetails, setCodeDetails] = useState({
+    group_code: '',
+    code: '',
+    code_name: '',
+    description: '',
+    flag: false,
+    sub_codes: ['', '', '', ''], 
+    ref_codes: ['', '', '', ''], 
+  });
 
   useEffect(() => {
-    if (codeId) {
-      // 코드 ID가 주어졌을 때 기존 코드를 불러옴
-      fetchCode(codeId);
+    if (code) {
+      setCodeDetails({
+        ...code,
+        flag: code.flag === 'Y',
+        sub_codes: code.sub_codes ? [...code.sub_codes, '', '', ''].slice(0, 4) : ['', '', '', ''],
+        ref_codes: code.ref_codes ? [...code.ref_codes, '', '', ''].slice(0, 4) : ['', '', '', ''],
+      });
     } else {
-      // 코드 ID가 없으면 새로운 코드 객체를 초기화
-      setCode({
-        upperCode: '', // 상위 코드 초기값
-        codeName: '', // 코드명 초기값
-        description: '', // 설명 초기값
-        isActive: false, // 사용 여부 초기값
-        subCode1: '', // 서브 코드 초기값
-        subCode2: '', // 서브 코드 초기값
-        subCode3: '', // 서브 코드 초기값
-        subCode4: '', // 서브 코드 초기값
-        refCode1: '', // 참조 코드 초기값
-        refCode2: '', // 참조 코드 초기값
-        refCode3: '', // 참조 코드 초기값
-        refCode4: '', // 참조 코드 초기값
+      setCodeDetails({
+        group_code: '',
+        code: '',
+        code_name: '',
+        description: '',
+        flag: false,
+        sub_codes: ['', '', '', ''],
+        ref_codes: ['', '', '', ''],
       });
     }
-  }, [codeId]);
-
-  const fetchCode = async (id) => {
-    try {
-      const codeData = await codeService.getCode(id);
-      setCode(codeData);
-    } catch (error) {
-      console.error('Error fetching code:', error.message);
-    }
-  };
+  }, [code]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setCode(prevCode => ({
-      ...prevCode,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+
+    if (type === 'checkbox') {
+      setCodeDetails((prevDetails) => ({
+        ...prevDetails,
+        [name]: checked,
+      }));
+    } else if (name.startsWith('sub_code') || name.startsWith('ref_code')) {
+      const index = parseInt(name[name.length - 1], 10) - 1;
+      const newArray = name.startsWith('sub_code')
+        ? [...codeDetails.sub_codes]
+        : [...codeDetails.ref_codes];
+      newArray[index] = value;
+      setCodeDetails((prevDetails) => ({
+        ...prevDetails,
+        [name.startsWith('sub_code') ? 'sub_codes' : 'ref_codes']: newArray,
+      }));
+    } else {
+      setCodeDetails((prevDetails) => ({
+        ...prevDetails,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSave = async () => {
     try {
-      if (codeId) {
-        // 코드 ID가 있으면 수정
-        await codeService.updateCode(codeId, code);
+      const saveDetails = {
+        ...codeDetails,
+        flag: codeDetails.flag ? 'Y' : 'N',
+      };
+
+      if (code && code.code) {
+        await codeService.updateCode(code.code, saveDetails );
       } else {
-        // 코드 ID가 없으면 등록
-        await codeService.createCode(code);
+        if (saveDetails.group_code === '') {
+          delete saveDetails.group_code;
+        }
+        await codeService.createCode(saveDetails );
       }
       handleClose();
     } catch (error) {
@@ -60,77 +81,80 @@ const CodeDetailModal = ({ open, handleClose, codeId, isUpperCode }) => {
     }
   };
 
-  
-
   return (
     <Modal open={open} onClose={handleClose}>
       <Box sx={{ ...modalStyle }}>
-        {code && (
-          <>
-            <TextField
-              label={isUpperCode ? "상위코드" : "하위코드"}
-              name="upperCode"
-              value={code.upperCode}
+        <TextField
+          label="상위코드"
+          name="group_code"
+          value={codeDetails.group_code}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+          disabled={!!codeDetails.group_code} 
+        />
+        <TextField
+          label="하위코드"
+          name="code"
+          value={codeDetails.code}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+        />
+        <TextField
+          label="코드명"
+          name="code_name"
+          value={codeDetails.code_name}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+        />
+        <TextField
+          label="설명"
+          name="description"
+          value={codeDetails.description}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={codeDetails.flag}
               onChange={handleChange}
-              fullWidth
-              margin="normal"
+              name="flag"
             />
-            <TextField
-              label="코드명"
-              name="codeName"
-              value={code.codeName}
-              onChange={handleChange}
-              fullWidth
-              margin="normal"
-            />
-            <TextField
-              label="설명"
-              name="description"
-              value={code.description || ''}
-              onChange={handleChange}
-              fullWidth
-              margin="normal"
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={code.isActive}
-                  onChange={handleChange}
-                  name="isActive"
-                />
-              }
-              label="사용 여부"
-            />
-            {[...Array(4)].map((_, index) => (
-              <TextField
-                key={`subCode${index + 1}`}
-                label={`서브코드${index + 1}`}
-                name={`subCode${index + 1}`}
-                value={code[`subCode${index + 1}`] || ''}
-                onChange={handleChange}
-                fullWidth
-                margin="normal"
-              />
-            ))}
-            {[...Array(4)].map((_, index) => (
-              <TextField
-                key={`refCode${index + 1}`}
-                label={`참조코드${index + 1}`}
-                name={`refCode${index + 1}`}
-                value={code[`refCode${index + 1}`] || ''}
-                onChange={handleChange}
-                fullWidth
-                margin="normal"
-              />
-            ))}
-            <Button onClick={handleSave} variant="contained" color="primary" sx={{ mt: 2 }}>
-              수정
-            </Button>
-            <Button onClick={handleClose} variant="outlined" sx={{ mt: 2, ml: 2 }}>
-              닫기
-            </Button>
-          </>
-        )}
+          }
+          label="사용 여부"
+        />
+        {[...Array(4)].map((_, index) => (
+          <TextField
+            key={`sub_code${index + 1}`}
+            label={`서브코드${index + 1}`}
+            name={`sub_code${index + 1}`}
+            value={codeDetails.sub_codes[index]}
+            onChange={handleChange}
+            fullWidth
+            margin="normal"
+          />
+        ))}
+        {[...Array(4)].map((_, index) => (
+          <TextField
+            key={`ref_code${index + 1}`}
+            label={`참조코드${index + 1}`}
+            name={`ref_code${index + 1}`}
+            value={codeDetails.ref_codes[index]}
+            onChange={handleChange}
+            fullWidth
+            margin="normal"
+          />
+        ))}
+        <Button onClick={handleSave} variant="contained" color="primary" sx={{ mt: 2 }}>
+          저장
+        </Button>
+        <Button onClick={handleClose} variant="outlined" sx={{ mt: 2, ml: 2 }}>
+          닫기
+        </Button>
       </Box>
     </Modal>
   );

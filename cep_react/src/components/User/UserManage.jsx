@@ -2,30 +2,30 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Box } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import Pagination from '@mui/material/Pagination';
-import userService from '../../services/userService'; 
-import UserDetailModal from './UserDetailModal'; 
-import '../../styles/Scroll.css'; 
+import userService from '../../services/userService';
+import UserDetailModal from './UserDetailModal';
+import '../../styles/Scroll.css';
 
 const UserManage = () => {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(5); // Adjusted page size for demonstration
   const [total, setTotal] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     try {
-      const { users, total } = await userService.getUsers(page, pageSize);
-      setUsers(users);
-      setTotal(total);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    }, [page, pageSize]);
+      const { users: fetchedUsers, total: fetchedTotal } = await userService.getUsers(page, pageSize);
+      setUsers(fetchedUsers);
+      setTotal(fetchedTotal);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  }, [page, pageSize]);
 
   useEffect(() => {
-    fetchUsers(); 
+    fetchUsers();
   }, [fetchUsers]);
 
   const handleDelete = async (id) => {
@@ -38,7 +38,7 @@ const UserManage = () => {
       console.error(`Error deleting user with ID ${id}:`, error);
     }
   };
-  
+
   const openModal = (user) => {
     setSelectedUser(user);
     setIsModalOpen(true);
@@ -55,6 +55,12 @@ const UserManage = () => {
     setPage(value);
   };
 
+  // Handling cases where users is not an array (edge case)
+  if (!Array.isArray(users)) {
+    console.error('Users data is not an array:', users);
+    return null; // or handle differently as per your app's logic
+  }
+
   return (
     <div className="scroll-container">
       <Box className="title-container">
@@ -66,21 +72,21 @@ const UserManage = () => {
           <TableHead>
             <TableRow>
               <TableCell>No.</TableCell>
-              <TableCell>ID</TableCell>
-              <TableCell>Name</TableCell>
+              <TableCell>Username</TableCell>
               <TableCell>Email</TableCell>
               <TableCell>Contact</TableCell>
+              <TableCell>Permission</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {users.map((user, index) => (
-              <TableRow key={user.id}>
+              <TableRow key={user.username}>
                 <TableCell>{(page - 1) * pageSize + index + 1}</TableCell>
-                <TableCell>{user.userId}</TableCell>
-                <TableCell>{user.name}</TableCell>
+                <TableCell>{user.username}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.contact}</TableCell>
+                <TableCell>{user.permission}</TableCell>
                 <TableCell>
                   <Button onClick={() => openModal(user)} startIcon={<Edit />}>Edit</Button>
                   <Button onClick={() => handleDelete(user.id)} startIcon={<Delete />} color="error">Delete</Button>

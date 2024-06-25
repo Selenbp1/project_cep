@@ -20,8 +20,8 @@ const getUsers = async (page, pageSize) => {
       }
     });
     return {
-      users: response.data,
-      total: Number(response.headers['x-total-count']),
+      users: response.data.users,
+      total: response.data.total,
     };
   } catch (error) {
     console.error('Error fetching users:', error);

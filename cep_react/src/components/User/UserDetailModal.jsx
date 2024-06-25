@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Modal, Box, TextField, Button, FormControlLabel, Checkbox } from '@mui/material';
+import { Modal, Box, TextField, Button } from '@mui/material';
 import userService from '../../services/userService';
 
 const UserDetailModal = ({ user, onClose, onSave }) => {
   const [formData, setFormData] = useState({
-    userId: user ? user.userId : '',
-    name: user ? user.name : '',
-    email: user ? user.email : '',
-    contact: user ? user.contact : '',
+    username: user ? user.username : '', 
+    name: user ? user.info[0].full_name : '',
+    email: user ? user.info[0].email : '', 
+    contact: user ? user.info[0].contact : '', 
     isActive: user ? user.isActive : false,
   });
 
@@ -22,9 +22,9 @@ const UserDetailModal = ({ user, onClose, onSave }) => {
   const handleSubmit = async () => {
     try {
       if (user) {
-        await userService.updateUser(user.id, formData);
+        await userService.updateUser(user.id, formData); 
       } else {
-        await userService.createUser(formData);
+        await userService.createUser(formData); 
       }
       onSave();
     } catch (error) {
@@ -35,14 +35,10 @@ const UserDetailModal = ({ user, onClose, onSave }) => {
   return (
     <Modal open={true} onClose={onClose}>
       <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, bgcolor: 'background.paper', boxShadow: 24, p: 4 }}>
-        <TextField name="userId" label="ID" value={formData.userId} onChange={handleChange} fullWidth />
-        <TextField name="name" label="Name" value={formData.name} onChange={handleChange} fullWidth />
+        <TextField name="full_name" label="Full Name" value={formData.full_name} onChange={handleChange} fullWidth />
         <TextField name="email" label="Email" value={formData.email} onChange={handleChange} fullWidth />
         <TextField name="contact" label="Contact" value={formData.contact} onChange={handleChange} fullWidth />
-        <FormControlLabel
-          control={<Checkbox name="isActive" checked={formData.isActive} onChange={handleChange} />}
-          label="Active"
-        />
+        <TextField name="permission" label="Permission" value={formData.permission} onChange={handleChange} fullWidth />
         <Button onClick={handleSubmit} variant="contained" color="primary" style={{ marginTop: '1rem' }}>
           Save
         </Button>
