@@ -1,132 +1,122 @@
 import traceback
 from datetime import datetime
-from database.conn import * 
-from database.model_class import * 
+from database.conn import Session
+from database.model_class import common_code
+from sqlalchemy import or_
 
-
-def total_common_code_list_service():
+def total_common_code_list_service(page: int, pageSize: int):
     try:
-        response = session.query(common_code).order_by(common_code.code.asc()).all()
-        result = []
-        for r in response:
-            result.append(r)
+        session = Session()
+        offset = (page - 1) * pageSize
+        # response = session.query(common_code).order_by(common_code.code.asc()).offset(offset).limit(pageSize).all()
+        # total = session.query(common_code).count()
+        response = session.query(common_code).filter(or_(common_code.group_code == None, common_code.group_code == '')).order_by(common_code.code.asc()).offset(offset).limit(pageSize).all()
+        total = session.query(common_code).filter(or_(common_code.group_code == None, common_code.group_code == '')).count()
+        result = {"codes": [r.__dict__ for r in response], "total": total}
+        session.close()
         return result
     except Exception as e:
         print(e)
         traceback.print_exc()
-        return {"data" : "fail"}
+        return {"codes": [], "total": 0}
 
-def common_code_id_service(parameter):
+def sub_common_code_list_service(parentCodeId: str, page: int, pageSize: int):
     try:
+        session = Session()
+        offset = (page - 1) * pageSize
+        response = session.query(common_code).filter(common_code.group_code == parentCodeId).order_by(common_code.code.asc()).offset(offset).limit(pageSize).all()
+        total = session.query(common_code).filter(common_code.group_code == parentCodeId).count()
+        result = {"subCodes": [r.__dict__ for r in response], "total": total}
+        session.close()
+        return result
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+        return {"subCodes": [], "total": 0}
+
+def common_code_id_service(parameter: str):
+    try:
+        session = Session()
         result = session.query(common_code).filter(common_code.code == parameter).first()
-        return result
+        session.close()
+        return result.__dict__ if result else None
     except Exception as e:
         print(e)
         traceback.print_exc()
-        return {"data" : "fail"}
-    
+        return None
+
 def common_code_creation_service(body):
     try:
+        session = Session()
         current_time = datetime.now()
-        default_value = None
-        
-        group_code = body.group_code if hasattr(body, 'group_code') else default_value
-        code = body.code if hasattr(body, 'code') else default_value
-        code_name = body.code_name if hasattr(body, 'code_name') else default_value
-        sub_code = body.sub_code if hasattr(body, 'sub_code') else default_value
-        sub_code2 = body.sub_code2 if hasattr(body, 'sub_code2') else default_value
-        sub_code3 = body.sub_code3 if hasattr(body, 'sub_code3') else default_value
-        sub_code4 = body.sub_code4 if hasattr(body, 'sub_code4') else default_value
-        ref_code = body.ref_code if hasattr(body, 'ref_code') else default_value
-        ref_code2 = body.ref_code2 if hasattr(body, 'ref_code2') else default_value
-        ref_code3 = body.ref_code3 if hasattr(body, 'ref_code3') else default_value
-        ref_code4 = body.ref_code4 if hasattr(body, 'ref_code4') else default_value
-        description = body.description if hasattr(body, 'description') else default_value
-        flag = body.flag if hasattr(body, 'flag') else default_value
-        
-        
-        common_code_add = common_code(
-            group_code=group_code, 
-            code=code, 
-            code_name=code_name,
-            sub_code=sub_code,
-            sub_code2=sub_code2,
-            sub_code3=sub_code3,
-            sub_code4=sub_code4,
-            ref_code=ref_code,
-            ref_code2=ref_code2,
-            ref_code3=ref_code3,
-            ref_code4=ref_code4,
-            description=description,
+        new_common_code = common_code(
+            group_code=body.group_code,
+            code=body.code,
+            code_name=body.code_name,
+            sub_code=body.sub_code,
+            sub_code2=body.sub_code2,
+            sub_code3=body.sub_code3,
+            sub_code4=body.sub_code4,
+            ref_code=body.ref_code,
+            ref_code2=body.ref_code2,
+            ref_code3=body.ref_code3,
+            ref_code4=body.ref_code4,
+            description=body.description,
             wdate=current_time,
-            flag=flag
-            )
-        session.add(common_code_add)
+            flag=body.flag
+        )
+        session.add(new_common_code)
         session.commit()
+        session.close()
+        return {"message": "Common code created successfully"}
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+        return {"message": "Failed to create common code"}
 
-        return {"data" : "ok"}
-    
-    except Exception as e:
-        print(e)
-        traceback.print_exc()
-        return {"data" : "fail"}
-    
-    
-def common_code_update_service(parameter, body):
+def common_code_update_service(parameter: str, body):
     try:
+        session = Session()
         current_time = datetime.now()
-        default_value = None
+        common_code_to_update = session.query(common_code).filter(common_code.code == parameter).first()
         
-        group_code = body.group_code if hasattr(body, 'group_code') else default_value
-        code = body.code if hasattr(body, 'code') else default_value
-        code_name = body.code_name if hasattr(body, 'code_name') else default_value
-        sub_code = body.sub_code if hasattr(body, 'sub_code') else default_value
-        sub_code2 = body.sub_code2 if hasattr(body, 'sub_code2') else default_value
-        sub_code3 = body.sub_code3 if hasattr(body, 'sub_code3') else default_value
-        sub_code4 = body.sub_code4 if hasattr(body, 'sub_code4') else default_value
-        ref_code = body.ref_code if hasattr(body, 'ref_code') else default_value
-        ref_code2 = body.ref_code2 if hasattr(body, 'ref_code2') else default_value
-        ref_code3 = body.ref_code3 if hasattr(body, 'ref_code3') else default_value
-        ref_code4 = body.ref_code4 if hasattr(body, 'ref_code4') else default_value
-        description = body.description if hasattr(body, 'description') else default_value
-        flag = body.flag if hasattr(body, 'flag') else default_value
-        
-        result = session.query(common_code).filter(common_code.code == parameter).first()
-        
-        if result:
-            result.group_code = group_code
-            result.code = code
-            result.code_name = code_name
-            result.sub_code = sub_code
-            result.sub_code2 = sub_code2
-            result.sub_code3 = sub_code3
-            result.sub_code4 = sub_code4
-            result.ref_code = ref_code
-            result.ref_code2 = ref_code2
-            result.ref_code3 = ref_code3
-            result.ref_code4 = ref_code4
-            result.description = description
-            result.flag = flag
-            result.mdate = current_time
-            session.commit()
-        
-        return {"data" : "ok"}
+
+        common_code_to_update.group_code = body.group_code
+        common_code_to_update.code_name = body.code_name
+        common_code_to_update.sub_code = body.sub_code
+        common_code_to_update.sub_code2 = body.sub_code2
+        common_code_to_update.sub_code3 = body.sub_code3
+        common_code_to_update.sub_code4 = body.sub_code4
+        common_code_to_update.ref_code = body.ref_code
+        common_code_to_update.ref_code2 = body.ref_code2
+        common_code_to_update.ref_code3 = body.ref_code3
+        common_code_to_update.ref_code4 = body.ref_code4
+        common_code_to_update.description = body.description
+        common_code_to_update.flag = body.flag
+        common_code_to_update.mdate = current_time
+        session.commit()
+        session.close()
+        return {"message": "Common code updated successfully"}
+
     except Exception as e:
         print(e)
         traceback.print_exc()
-        
-        
-def common_code_deletion_service(parameter):
+        return {"message": "Failed to update common code"}
+
+def common_code_deletion_service(parameter: str):
     try:
-        result = session.query(common_code).filter(common_code.code == parameter).first()
+        session = Session()
+        common_code_to_delete = session.query(common_code).filter(common_code.code == parameter).first()
         
-        if result:
-            session.delete(result)
+        if common_code_to_delete:
+            session.delete(common_code_to_delete)
             session.commit()
-        return {"data" : "ok"}
+            session.close()
+            return {"message": "Common code deleted successfully"}
+        else:
+            session.close()
+            return {"message": "Common code not found"}
     except Exception as e:
         print(e)
         traceback.print_exc()
-        return {"data" : "fail"}
-        
-        
+        return {"message": "Failed to delete common code"}

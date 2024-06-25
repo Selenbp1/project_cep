@@ -122,31 +122,32 @@ class common_code(Base):
     flag = Column(String(5), nullable=False)
     
     
-class user(Base):
+class User(Base):
     __tablename__ = 'user'
     
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     username = Column(String(100), unique=True, index=True)
     password = Column(String(1000))
 
-    info = relationship("user_info", back_populates="user")
-    permissions = relationship("user_permission", back_populates="user")
-    
-class user_info(Base):
+    info = relationship("UserInfo", back_populates="user", uselist=False)
+    permissions = relationship("UserPermission", back_populates="user", uselist=False)
+
+class UserInfo(Base):
     __tablename__ = 'user_info'
     
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     full_name = Column(String(50))
     email = Column(String(50))
+    contact = Column(String(100))
     
-    user = relationship("user", back_populates="info")
+    user = relationship("User", back_populates="info")
 
-class user_permission(Base):
+class UserPermission(Base):
     __tablename__ = 'user_permission'
     
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     permission = Column(String(50))
     
-    user = relationship("user", back_populates="permissions")
+    user = relationship("User", back_populates="permissions")
