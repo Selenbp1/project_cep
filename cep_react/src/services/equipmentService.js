@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 const BASE_URL = 'http://localhost:9090';
@@ -11,16 +10,16 @@ const instance = axios.create({
   },
 });
 
-
-const getEquipment = async (page, rowsPerPage) => {
+const getEquipment = async (page, pageSize) => {
   try {
-    const response = await instance.get(`/equipment?page=${page}&perPage=${rowsPerPage}`);
+    const response = await instance.get(`/equipment?page=${page}&pageSize=${pageSize}`);
     return response.data; // Assuming response.data contains equipment and total count
   } catch (error) {
     console.error('Error fetching equipment:', error);
     throw error;
   }
 };
+
 
 const getEquipmentById = async (id) => {
   try {

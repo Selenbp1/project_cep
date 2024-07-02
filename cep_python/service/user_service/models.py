@@ -13,6 +13,7 @@ class UserCreateRequest(BaseModel):
     
 class UserUpdateRequest(BaseModel):
     username: str
+    password: str
     info: UserInfo
     permission: str
     
@@ -23,3 +24,6 @@ class UserResponse(BaseModel):
     email: str
     contact: str
     permission: str
+    
+    class Config:
+        orm_mode = True

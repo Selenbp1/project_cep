@@ -17,9 +17,10 @@ const EquipmentManage = () => {
   const fetchEquipment = useCallback(async () => {
     try {
       const response = await equipmentService.getEquipment(page, rowsPerPage);
-      if (response && response.equipment && response.total) {
-        setEquipmentList(response.equipment);
-        setTotal(response.total);
+
+      if (response && Array.isArray(response)) {
+        setEquipmentList(response);
+        setTotal(response.length);
       } else {
         console.error('Unexpected response structure:', response);
       }
@@ -71,8 +72,12 @@ const EquipmentManage = () => {
     setPage(value);
   };
 
-  const handleDownloadExcel = () => {
-    equipmentService.downloadExcel();
+  const handleDownloadExcel = async () => {
+    try {
+      await equipmentService.downloadExcel();
+    } catch (error) {
+      console.error('Error downloading Excel:', error);
+    }
   };
 
   return (
@@ -93,8 +98,6 @@ const EquipmentManage = () => {
               <TableRow>
                 <TableCell>No.</TableCell>
                 <TableCell>장비명</TableCell>
-                <TableCell>설명</TableCell>
-                <TableCell>설비 업체</TableCell>
                 <TableCell>토픽명</TableCell>
                 <TableCell>IP</TableCell>
                 <TableCell>Port</TableCell>
@@ -106,13 +109,11 @@ const EquipmentManage = () => {
               {equipmentList.map((equip, index) => (
                 <TableRow key={equip.id}>
                   <TableCell>{index + 1 + (page - 1) * rowsPerPage}</TableCell>
-                  <TableCell>{equip.name}</TableCell>
-                  <TableCell>{equip.description}</TableCell>
-                  <TableCell>{equip.vendor}</TableCell>
-                  <TableCell>{equip.topic}</TableCell>
+                  <TableCell>{equip.title}</TableCell>
+                  <TableCell>{equip.topic_nm}</TableCell>
                   <TableCell>{equip.ip}</TableCell>
                   <TableCell>{equip.port}</TableCell>
-                  <TableCell>{equip.isActive ? 'Yes' : 'No'}</TableCell>
+                  <TableCell>{equip.flag ? 'Y' : 'N'}</TableCell>
                   <TableCell>
                     <Button size="small" onClick={() => handleView(equip.id)}>상세보기</Button>
                     <Button size="small" onClick={() => handleEdit(equip.id)}>수정</Button>

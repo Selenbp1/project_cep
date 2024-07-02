@@ -22,6 +22,7 @@ def users_list_service(page: int, pageSize: int):
         response = []
         for u in users:
             user_data = {
+                "id": u.id,
                 "username": u.username,
                 "permission": u.permissions.permission if u.permissions else None,
                 "full_name": u.info.full_name if u.info else None,
@@ -54,10 +55,11 @@ def create_user_service(user_data: UserCreateRequest):
 
         # Add user info if provided
         if user_data.info:
-            info_data = user_data.info
-            new_user.info = UserInfo(full_name=info_data.full_name,
-                                     email=info_data.email,
-                                     contact=info_data.contact)
+            new_user.info = UserInfo(
+                full_name=user_data.info.full_name,
+                email=user_data.info.email,
+                contact=user_data.info.contact
+            )
 
         # Add user permissions if provided
         if user_data.permission:
@@ -94,29 +96,31 @@ def update_user_service(user_id: int, updated_user_data: UserUpdateRequest):
         if not user_to_update:
             raise HTTPException(status_code=404, detail=f"User with ID {user_id} not found")
         
-        # Update username if provided
+        if updated_user_data.password:
+            user_to_update.password = updated_user_data.password
+            
         if 'username' in updated_user_data:
-            user_to_update.username = updated_user_data['username']
+            user_to_update.username = updated_user_data.username
         
-        # Update user info if provided
-        if 'info' in updated_user_data:
-            info_data = updated_user_data['info']
+        if updated_user_data.info:
+            info_data = updated_user_data.info
             if user_to_update.info:
-                user_to_update.info[0].full_name = info_data.get('full_name', user_to_update.info[0].full_name)
-                user_to_update.info[0].email = info_data.get('email', user_to_update.info[0].email)
-                user_to_update.info[0].contact = info_data.get('contact', user_to_update.info[0].contact)
+                user_to_update.info.full_name = info_data.full_name
+                user_to_update.info.email = info_data.email
+                user_to_update.info.contact = info_data.contact
             else:
-                user_to_update.info = [UserInfo(full_name=info_data['full_name'], 
-                                                email=info_data['email'], 
-                                                contact=info_data['contact'])]
+                user_to_update.info = UserInfo(
+                    full_name=info_data.full_name,
+                    email=info_data.email,
+                    contact=info_data.contact
+                )
         
-        # Update user permissions if provided
-        if 'permission' in updated_user_data:
-            permission_data = updated_user_data['permission']
+        if updated_user_data.permission:
+            permission_data = updated_user_data.permission
             if user_to_update.permissions:
-                user_to_update.permissions[0].permission = permission_data.get('permission', user_to_update.permissions[0].permission)
+                user_to_update.permissions.permission = permission_data
             else:
-                user_to_update.permissions = [UserPermission(permission=permission_data['permission'])]
+                user_to_update.permissions = UserPermission(permission=permission_data)
         
         session.commit()
         session.refresh(user_to_update)
@@ -124,10 +128,10 @@ def update_user_service(user_id: int, updated_user_data: UserUpdateRequest):
         updated_user = {
             "id": user_to_update.id,
             "username": user_to_update.username,
-            "full_name": user_to_update.info[0].full_name if user_to_update.info else None,
-            "email": user_to_update.info[0].email if user_to_update.info else None,
-            "contact": user_to_update.info[0].contact if user_to_update.info else None,
-            "permission": user_to_update.permissions[0].permission if user_to_update.permissions else None
+            "full_name": user_to_update.info.full_name if user_to_update.info else None,
+            "email": user_to_update.info.email if user_to_update.info else None,
+            "contact": user_to_update.info.contact if user_to_update.info else None,
+            "permission": user_to_update.permissions.permission if user_to_update.permissions else None
         }
         
         return updated_user
@@ -140,8 +144,14 @@ def update_user_service(user_id: int, updated_user_data: UserUpdateRequest):
 def delete_user_service(user_id: int):
     try:
         session = Session()
+
         user_to_delete = session.query(User).filter(User.id == user_id).first()
         
+        if user_to_delete.info:
+            session.delete(user_to_delete.info)
+        if user_to_delete.permissions:
+            session.delete(user_to_delete.permissions)
+            
         if not user_to_delete:
             raise HTTPException(status_code=404, detail=f"User with ID {user_id} not found")
         
@@ -150,6 +160,7 @@ def delete_user_service(user_id: int):
         
     except Exception as e:
         session.rollback()
+        traceback.print_exc()
         raise e
     finally:
         session.close()

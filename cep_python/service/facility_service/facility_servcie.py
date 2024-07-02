@@ -1,37 +1,47 @@
 import traceback
 import uuid
 from datetime import datetime
-from database.conn import * 
+from database.conn import Session
 from database.model_class import * 
+from sqlalchemy.orm import aliased, sessionmaker, outerjoin
 
-
-def total_equipment_list_service():
+def total_equipment_list_service(page: int, pageSize: int):
     try:
-        response = session.query(facility_equipment).order_by(facility_equipment.seq.asc()).all()
+        offset = (page - 1) * pageSize
+        response = Session.query(FacilityEquipment, CepResult)\
+                          .outerjoin(CepResult, FacilityEquipment.kafka_topic_uuid == CepResult.kafka_topic_uuid)\
+                          .order_by(FacilityEquipment.seq.asc())\
+                          .offset(offset)\
+                          .limit(pageSize).all()
         result = []
-        for r in response:
-            title = "[" + str(r.seq) + "]_" + r.equipment_nm
-            formatted_date = r.wdate.strftime("%Y-%m-%d %H:%M:%S")
-            
-            result.append({"title": title, "date":formatted_date, "equipmet_id": r.equipment_uuid})
+        for equipment, cep_result in response:
+            title = f"[{equipment.seq}]_{equipment.equipment_nm}"
+            result.append({
+                "id": equipment.seq,
+                "title": title,
+                "topic_nm": cep_result.kafka_topic_nm if cep_result else None,
+                "ip": cep_result.ip if cep_result else None,
+                "port": cep_result.port if cep_result else None,
+                "flag": cep_result.flag if cep_result else None
+            })
         return result
     except Exception as e:
         print(e)
         traceback.print_exc()
-        return {"data" : "fail"}
+        return {"data" : str(e)}
 
 # 룰명, 설비명, 아이템명, feature value명, feature value 로우 값, feature value 하이 값, stedv 값, order type, order low 값, order high 값, 알람 여부
 def total_item_list_service(equipment_id):
     try:
         
-        facility_item_alias = aliased(facility_item)
-        rule_algorithm_alias = aliased(rule_algorithm)
-        rule_algorithm_feature_alias = aliased(rule_algorithm_feature)
-        rule_algorithm_stdev_alias = aliased(rule_algorithm_stdev)
-        rule_algorithm_order_type_alias = aliased(rule_algorithm_order_type)
+        facility_item_alias = aliased(FacilityItem)
+        rule_algorithm_alias = aliased(RuleAlgorithm)
+        rule_algorithm_feature_alias = aliased(RuleAlgorithmFeature)
+        rule_algorithm_stdev_alias = aliased(RuleAlgorithmStdev)
+        rule_algorithm_order_type_alias = aliased(RuleAlgorithmOrderType)
         cep_alaram_alias = aliased(cep_alaram)
         
-        response = session.query(
+        response = Session.query(
             facility_item_alias.item_uuid,
             facility_item_alias.item_nm,
             rule_algorithm_alias.rule_uuid,
@@ -103,18 +113,18 @@ def facility_creation_service(body):
         kafka_topic_uuid = uuid.uuid5(namespace, facility_name)
         
         kafka_topic_nm = facility_name + "_topic"
-        cep_result_add = cep_result(kafka_topic_uuid=kafka_topic_uuid, kafka_topic_nm=kafka_topic_nm, flag='Y', wdate=current_time)
-        session.add(cep_result_add)
+        cep_result_add = CepResult(kafka_topic_uuid=kafka_topic_uuid, kafka_topic_nm=kafka_topic_nm, flag='Y', wdate=current_time)
+        Session.add(cep_result_add)
         
         equipment_uuid = uuid.uuid5(namespace, equipment_name)
-        facility_equipment_add = facility_equipment(equipment_uuid=equipment_uuid, equipment_nm=equipment_name, kafka_topic_uuid=kafka_topic_uuid, wdate=current_time)
-        session.add(facility_equipment_add)
+        facility_equipment_add = FacilityEquipment(equipment_uuid=equipment_uuid, equipment_nm=equipment_name, kafka_topic_uuid=kafka_topic_uuid, wdate=current_time)
+        Session.add(facility_equipment_add)
 
         for item_name in item_names:
             item_uuid = uuid.uuid5(namespace, item_name)
-            facility_item_add = facility_item(item_uuid=item_uuid, item_nm=item_name, equipment_uuid=equipment_uuid, wdate=current_time)
-            session.add(facility_item_add)
-            session.commit()
+            facility_item_add = FacilityItem(item_uuid=item_uuid, item_nm=item_name, equipment_uuid=equipment_uuid, wdate=current_time)
+            Session.add(facility_item_add)
+            Session.commit()
 
         return {"data" : "ok"}
     

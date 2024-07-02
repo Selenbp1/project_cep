@@ -1,7 +1,7 @@
 import traceback
 from datetime import datetime
 from database.conn import Session
-from database.model_class import common_code
+from database.model_class import CommonCode
 from sqlalchemy import or_
 
 def total_common_code_list_service(page: int, pageSize: int):
@@ -10,8 +10,8 @@ def total_common_code_list_service(page: int, pageSize: int):
         offset = (page - 1) * pageSize
         # response = session.query(common_code).order_by(common_code.code.asc()).offset(offset).limit(pageSize).all()
         # total = session.query(common_code).count()
-        response = session.query(common_code).filter(or_(common_code.group_code == None, common_code.group_code == '')).order_by(common_code.code.asc()).offset(offset).limit(pageSize).all()
-        total = session.query(common_code).filter(or_(common_code.group_code == None, common_code.group_code == '')).count()
+        response = session.query(CommonCode).filter(or_(CommonCode.group_code == None, CommonCode.group_code == '')).order_by(CommonCode.code.asc()).offset(offset).limit(pageSize).all()
+        total = session.query(CommonCode).filter(or_(CommonCode.group_code == None, CommonCode.group_code == '')).count()
         result = {"codes": [r.__dict__ for r in response], "total": total}
         session.close()
         return result
@@ -24,8 +24,8 @@ def sub_common_code_list_service(parentCodeId: str, page: int, pageSize: int):
     try:
         session = Session()
         offset = (page - 1) * pageSize
-        response = session.query(common_code).filter(common_code.group_code == parentCodeId).order_by(common_code.code.asc()).offset(offset).limit(pageSize).all()
-        total = session.query(common_code).filter(common_code.group_code == parentCodeId).count()
+        response = session.query(CommonCode).filter(CommonCode.group_code == parentCodeId).order_by(CommonCode.code.asc()).offset(offset).limit(pageSize).all()
+        total = session.query(CommonCode).filter(CommonCode.group_code == parentCodeId).count()
         result = {"subCodes": [r.__dict__ for r in response], "total": total}
         session.close()
         return result
@@ -37,7 +37,7 @@ def sub_common_code_list_service(parentCodeId: str, page: int, pageSize: int):
 def common_code_id_service(parameter: str):
     try:
         session = Session()
-        result = session.query(common_code).filter(common_code.code == parameter).first()
+        result = session.query(CommonCode).filter(CommonCode.code == parameter).first()
         session.close()
         return result.__dict__ if result else None
     except Exception as e:
@@ -49,7 +49,7 @@ def common_code_creation_service(body):
     try:
         session = Session()
         current_time = datetime.now()
-        new_common_code = common_code(
+        new_common_code = CommonCode(
             group_code=body.group_code,
             code=body.code,
             code_name=body.code_name,
@@ -78,7 +78,7 @@ def common_code_update_service(parameter: str, body):
     try:
         session = Session()
         current_time = datetime.now()
-        common_code_to_update = session.query(common_code).filter(common_code.code == parameter).first()
+        common_code_to_update = session.query(CommonCode).filter(CommonCode.code == parameter).first()
         
 
         common_code_to_update.group_code = body.group_code
@@ -106,7 +106,7 @@ def common_code_update_service(parameter: str, body):
 def common_code_deletion_service(parameter: str):
     try:
         session = Session()
-        common_code_to_delete = session.query(common_code).filter(common_code.code == parameter).first()
+        common_code_to_delete = session.query(CommonCode).filter(CommonCode.code == parameter).first()
         
         if common_code_to_delete:
             session.delete(common_code_to_delete)

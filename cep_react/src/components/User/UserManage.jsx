@@ -81,7 +81,7 @@ const UserManage = () => {
           </TableHead>
           <TableBody>
             {users.map((user, index) => (
-              <TableRow key={user.username}>
+              <TableRow key={user.id}>
                 <TableCell>{(page - 1) * pageSize + index + 1}</TableCell>
                 <TableCell>{user.username}</TableCell>
                 <TableCell>{user.email}</TableCell>

@@ -7,21 +7,27 @@ const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUp
   const [equipment, setEquipment] = useState({ name: '', description: '', vendor: '', topic: '', ip: '', port: '', isActive: true });
   const [items, setItems] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10); // Set your desired rows per page
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
-    if (equipmentId) {
-      const fetchEquipment = async () => {
-        const equipmentData = await equipmentService.getEquipmentById(equipmentId);
-        setEquipment(equipmentData);
-        const itemsData = await equipmentService.getItemsByEquipmentId(equipmentId);
-        setItems(itemsData);
-      };
-      fetchEquipment();
-    } else {
-      setEquipment({ name: '', description: '', vendor: '', topic: '', ip: '', port: '', isActive: true });
-      setItems([]);
-    }
+    const fetchData = async () => {
+      if (equipmentId) {
+        try {
+          const equipmentData = await equipmentService.getEquipmentById(equipmentId);
+          setEquipment(equipmentData);
+
+          const itemsData = await equipmentService.getItemsByEquipmentId(equipmentId);
+          setItems(itemsData);
+        } catch (error) {
+          console.error('Error fetching equipment data:', error);
+        }
+      } else {
+        setEquipment({ name: '', description: '', vendor: '', topic: '', ip: '', port: '', isActive: true });
+        setItems([]);
+      }
+    };
+
+    fetchData();
   }, [equipmentId]);
 
   const handleChange = (e) => {
@@ -40,18 +46,18 @@ const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUp
 
   const handleSave = async () => {
     if (isEditMode) {
-      if (equipmentId) {
-        await equipmentService.updateEquipment(equipmentId, equipment);
-        // Update items here if necessary
-      } else {
-        const newEquipment = await equipmentService.createEquipment(equipment);
-        const newItemsWithEquipmentId = items.map(item => ({
-            ...item,
-            equipmentId: newEquipment.id,
-          }));
-        await equipmentService.createItems(newEquipment.id, newItemsWithEquipmentId);
+      try {
+        if (equipmentId) {
+          await equipmentService.updateEquipment(equipmentId, equipment);
+          await equipmentService.updateItems(equipmentId, items); // 예시 API 호출. 실제로는 적절한 API를 호출해야 함.
+        } else {
+          const newEquipment = await equipmentService.createEquipment(equipment);
+          await equipmentService.createItems(newEquipment.id, items);
+        }
+        onUpdate();
+      } catch (error) {
+        console.error('Error saving equipment:', error);
       }
-      onUpdate();
     }
     handleClose();
   };
@@ -102,24 +108,6 @@ const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUp
           disabled={!isEditMode}
         />
         <TextField
-          label="설명"
-          name="description"
-          value={equipment.description}
-          onChange={handleChange}
-          fullWidth
-          margin="normal"
-          disabled={!isEditMode}
-        />
-        <TextField
-          label="설비 업체"
-          name="vendor"
-          value={equipment.vendor}
-          onChange={handleChange}
-          fullWidth
-          margin="normal"
-          disabled={!isEditMode}
-        />
-        <TextField
           label="토픽명"
           name="topic"
           value={equipment.topic}
@@ -147,12 +135,12 @@ const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUp
           disabled={!isEditMode}
         />
         <Typography variant="h6" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 6, mb: 2 }}>
-            아이템 정보
-            {isEditMode && (
-                <Button variant="outlined" color="inherit" onClick={handleAddItem}>
-                    아이템 추가
-                </Button>
-                )}
+          아이템 정보
+          {isEditMode && (
+            <Button variant="outlined" color="inherit" onClick={handleAddItem}>
+              아이템 추가
+            </Button>
+          )}
         </Typography>
         <TableContainer component={Paper}>
           <Table>
@@ -169,7 +157,7 @@ const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUp
                 ? items.slice(currentPage * rowsPerPage, currentPage * rowsPerPage + rowsPerPage)
                 : items
               ).map((item, index) => (
-                <TableRow key={item.id}>
+                <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>
                     <TextField
@@ -200,24 +188,24 @@ const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUp
             </TableBody>
           </Table>
         </TableContainer>
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
-            component="div"
-            count={items.length}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            page={currentPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-          />
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={items.length}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          page={currentPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
         <Box sx={{ display: 'flex', justifyContent: 'right', alignItems: 'center', mt: 2 }}>
-            {isEditMode && (
-                <Button variant="contained" color="primary" onClick={handleSave}>
-                저장
-                </Button>
-            )}
-            <Button variant="outlined" color="secondary" onClick={handleCloseModal}>
-                닫기
+          {isEditMode && (
+            <Button variant="contained" color="primary" onClick={handleSave}>
+              저장
             </Button>
+          )}
+          <Button variant="outlined" color="secondary" onClick={handleCloseModal}>
+            닫기
+          </Button>
         </Box>
       </Box>
     </Modal>
@@ -225,11 +213,11 @@ const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUp
 };
 
 EquipmentDetailModal.propTypes = {
-    open: PropTypes.bool.isRequired,
-    handleClose: PropTypes.func.isRequired,
-    equipmentId: PropTypes.number, 
-    isEditMode: PropTypes.bool.isRequired,
-    onUpdate: PropTypes.func.isRequired, 
-  }
+  open: PropTypes.bool.isRequired,
+  handleClose: PropTypes.func.isRequired,
+  equipmentId: PropTypes.number,
+  isEditMode: PropTypes.bool.isRequired,
+  onUpdate: PropTypes.func.isRequired,
+};
 
 export default EquipmentDetailModal;

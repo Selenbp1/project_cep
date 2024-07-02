@@ -1,18 +1,17 @@
 import traceback
 from service.facility_service.facility_servcie import *
-from service.user_service.login_service import get_token, verify_token
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 
 
 router = APIRouter()
 
-@router.get("/equipment_list", tags=['설비'], summary="설비 전체 리스트 조회")
-async def total_equipment_list_api():
+@router.get("/equipment", tags=['설비'], summary="설비 전체 리스트 조회")
+async def total_equipment_list_api(page: int = 1, pageSize: int = 10):
     try:
-        result = total_equipment_list_service()
+        result = total_equipment_list_service(page, pageSize)
         return result
     except Exception as e:
         traceback.print_exc()
@@ -46,11 +45,8 @@ class facility_creation_body(BaseModel):
         }
 
 @router.post("/facility_creation/", tags=['설비'], summary="공장 설비 및 아이템 정보 저장")
-async def facility_creation_api(body : facility_creation_body, token: str = Depends(get_token)):
+async def facility_creation_api(body : facility_creation_body):
     try:
-        if not verify_token(token):
-            raise HTTPException(status_code=401, detail="Unauthorized")
-
         result = facility_creation_service(body)
         return result
     except Exception as e:
