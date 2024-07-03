@@ -48,6 +48,7 @@ class FacilityItem(Base):
     item_uuid = Column(String(100), nullable=False)
     item_nm = Column(String(100), nullable=False)
     equipment_uuid = Column(String(100), ForeignKey('facility_equipment.equipment_uuid'), nullable=False)
+    data_type = Column(String(50))
     wdate = Column(TIMESTAMP)
     mdate = Column(TIMESTAMP)
     

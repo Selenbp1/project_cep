@@ -3,7 +3,8 @@ import uuid
 from datetime import datetime
 from database.conn import Session
 from database.model_class import * 
-from sqlalchemy.orm import aliased, sessionmaker, outerjoin
+from sqlalchemy.orm import aliased, outerjoin
+from sqlalchemy.exc import SQLAlchemyError
 
 def total_equipment_list_service(page: int, pageSize: int):
     try:
@@ -15,9 +16,11 @@ def total_equipment_list_service(page: int, pageSize: int):
                           .limit(pageSize).all()
         result = []
         for equipment, cep_result in response:
-            title = f"[{equipment.seq}]_{equipment.equipment_nm}"
+            title = f"{equipment.equipment_nm}"
             result.append({
                 "id": equipment.seq,
+                "equipment_id": equipment.equipment_uuid,
+                "topic_id": cep_result.kafka_topic_uuid if cep_result else None,
                 "title": title,
                 "topic_nm": cep_result.kafka_topic_nm if cep_result else None,
                 "ip": cep_result.ip if cep_result else None,
@@ -30,105 +33,171 @@ def total_equipment_list_service(page: int, pageSize: int):
         traceback.print_exc()
         return {"data" : str(e)}
 
-# 룰명, 설비명, 아이템명, feature value명, feature value 로우 값, feature value 하이 값, stedv 값, order type, order low 값, order high 값, 알람 여부
+# 장비명, 토픽명, ip, port, 아이템명, 데이터 타입, 사용여부 
 def total_item_list_service(equipment_id):
     try:
         
-        facility_item_alias = aliased(FacilityItem)
-        rule_algorithm_alias = aliased(RuleAlgorithm)
-        rule_algorithm_feature_alias = aliased(RuleAlgorithmFeature)
-        rule_algorithm_stdev_alias = aliased(RuleAlgorithmStdev)
-        rule_algorithm_order_type_alias = aliased(RuleAlgorithmOrderType)
-        cep_alaram_alias = aliased(cep_alaram)
+        response = Session.query(FacilityEquipment, CepResult, FacilityItem)\
+                          .outerjoin(CepResult, FacilityEquipment.kafka_topic_uuid == CepResult.kafka_topic_uuid)\
+                          .outerjoin(FacilityItem, FacilityEquipment.equipment_uuid == FacilityItem.equipment_uuid)\
+                          .filter(FacilityEquipment.seq == equipment_id) \
+                          .order_by(FacilityEquipment.seq.asc(), FacilityItem.seq.asc()).all() 
+        equipment_dict = {}
         
-        response = Session.query(
-            facility_item_alias.item_uuid,
-            facility_item_alias.item_nm,
-            rule_algorithm_alias.rule_uuid,
-            rule_algorithm_alias.rule_nm,
-            rule_algorithm_alias.size_count,
-            rule_algorithm_feature_alias.feature_value_id,
-            rule_algorithm_feature_alias.feature_value_nm,
-            rule_algorithm_feature_alias.feature_low_value,
-            rule_algorithm_feature_alias.feature_high_value,
-            rule_algorithm_stdev_alias.stdev_value,
-            rule_algorithm_order_type_alias.order_type_flag,
-            rule_algorithm_order_type_alias.order_lower_limit,
-            rule_algorithm_order_type_alias.order_upper_limit,
-            cep_alaram_alias.alaram_flag
-        ).select_from(
-            outerjoin(facility_item_alias, rule_algorithm_alias, facility_item_alias.item_uuid == rule_algorithm_alias.item_uuid
-                      )
-            .outerjoin(
-                rule_algorithm_feature_alias, facility_item_alias.item_uuid == rule_algorithm_feature_alias.item_uuid
-                       )
-            .outerjoin(
-                rule_algorithm_stdev_alias, facility_item_alias.item_uuid == rule_algorithm_stdev_alias.item_uuid
-                       )
-            .outerjoin(
-                rule_algorithm_order_type_alias, facility_item_alias.item_uuid == rule_algorithm_order_type_alias.item_uuid
-                )
-            .outerjoin(
-                cep_alaram_alias, facility_item_alias.item_uuid == cep_alaram_alias.item_uuid
-                )
-        ).filter(
-            facility_item_alias.equipment_uuid == equipment_id
-        )
+        for equipment, cep_result, item in response:
+            if equipment.seq not in equipment_dict:
+                title = f"{equipment.equipment_nm}"
+                equipment_dict[equipment.seq] = {
+                    "id": equipment.seq,
+                    "equipment_id": equipment.equipment_uuid,
+                    "equipment_nm": title,
+                    "topic_id": cep_result.kafka_topic_uuid if cep_result else None,
+                    "topic_nm": cep_result.kafka_topic_nm if cep_result else None,
+                    "ip": cep_result.ip if cep_result else None,
+                    "port": cep_result.port if cep_result else None,
+                    "flag": cep_result.flag if cep_result else None,
+                    "item": []
+                }
+            
+            if item:
+                equipment_dict[equipment.seq]["item"].append({
+                    "id": item.seq,
+                    "item_uuid": item.item_uuid,
+                    "item_nm": item.item_nm,
+                    "data_type": item.data_type
+                })
         
-        result = []
-        for r in response:
-            result.append({
-                "item_uuid": r[0],
-                "item_nm": r[1],
-                "rule_uuid": r[2],
-                "rule_nm": r[3],
-                "size_count": r[4],
-                "feature_value_id": r[5],
-                "feature_value_nm": r[6],
-                "feature_low_value": r[7],
-                "feature_high_value": r[8],
-                "stdev_value": r[9],
-                "order_type_flag": "ASC" if r[10] == 1 else "DESC" if r[10] is not None else None,
-                "order_lower_limit": r[11],
-                "order_upper_limit": r[12],
-                "alaram_flag": r[13]
-            })
-        print("result : ", result)
+        result = list(equipment_dict.values())
         return result
+        
     except Exception as e:
         print(e)
         traceback.print_exc()
         return {"data" : "fail"}
+
 
 
 def facility_creation_service(body):
     try:
-        namespace = uuid.uuid4() 
+        namespace = uuid.uuid4()
         current_time = datetime.now()
         
-        facility_name = body.facility_name
-        equipment_name = body.equipment_name
-        item_names = body.item_name
+        equipment_name = body.equipment_nm
+        topic_name = body.topic_nm
+        ip = body.ip
+        port = body.port
+        items = body.item
+
+        # Create CepResult entry
+        kafka_topic_uuid = uuid.uuid5(namespace, equipment_name)
+        kafka_topic_nm = topic_name
+        cep_result_add = CepResult(kafka_topic_uuid=kafka_topic_uuid, kafka_topic_nm=kafka_topic_nm, flag='Y', wdate=current_time, ip=ip, port=port)
         
-        kafka_topic_uuid = uuid.uuid5(namespace, facility_name)
-        
-        kafka_topic_nm = facility_name + "_topic"
-        cep_result_add = CepResult(kafka_topic_uuid=kafka_topic_uuid, kafka_topic_nm=kafka_topic_nm, flag='Y', wdate=current_time)
-        Session.add(cep_result_add)
-        
+        # Create FacilityEquipment entry
         equipment_uuid = uuid.uuid5(namespace, equipment_name)
         facility_equipment_add = FacilityEquipment(equipment_uuid=equipment_uuid, equipment_nm=equipment_name, kafka_topic_uuid=kafka_topic_uuid, wdate=current_time)
-        Session.add(facility_equipment_add)
+        
+        # Create FacilityItem entries
+        facility_items = [FacilityItem(item_uuid=uuid.uuid5(namespace, item.item_nm), item_nm=item.item_nm, equipment_uuid=equipment_uuid, data_type=item.data_type, wdate=current_time) for item in items]
 
-        for item_name in item_names:
-            item_uuid = uuid.uuid5(namespace, item_name)
-            facility_item_add = FacilityItem(item_uuid=item_uuid, item_nm=item_name, equipment_uuid=equipment_uuid, wdate=current_time)
-            Session.add(facility_item_add)
-            Session.commit()
+        with Session() as session:
+            session.add(cep_result_add)
+            session.add(facility_equipment_add)
+            session.add_all(facility_items)
+            session.commit()
 
-        return {"data" : "ok"}
+        return {"data": "ok"}
     
     except Exception as e:
         print(e)
         traceback.print_exc()
-        return {"data" : "fail"}
+        return {"data": "fail"}
+
+def facility_update_service(equipment_id, body):
+    try:
+        equipment_name = body.equipment_nm
+        topic_name = body.topic_nm
+        ip = body.ip
+        port = body.port
+        items = body.item
+        
+        current_time = datetime.now()
+        
+        with Session() as session:
+            # Retrieve FacilityEquipment
+            equipment = session.query(FacilityEquipment).filter(FacilityEquipment.seq == equipment_id).first()
+            if not equipment:
+                raise ValueError("Equipment not found")
+                
+            equipment.equipment_nm = equipment_name
+
+            cep_result = session.query(CepResult).filter(CepResult.kafka_topic_uuid == body.topic_id).first()
+            if cep_result:
+                cep_result.kafka_topic_nm = topic_name
+                cep_result.ip = ip
+                cep_result.port = port
+                
+            existing_item_ids = [item.id for item in items if item.id is not None]
+
+            # Delete FacilityItem entries not in the current list
+            session.query(FacilityItem).filter(FacilityItem.equipment_uuid == body.equipment_id, FacilityItem.seq.notin_(existing_item_ids)).delete(synchronize_session=False)
+
+            for item in items:
+                if item.id is not None:
+                    # Update existing FacilityItem
+                    facility_item = session.query(FacilityItem).filter(FacilityItem.seq == item.id).first()
+                    if facility_item:
+                        facility_item.item_nm = item.item_nm
+                        facility_item.data_type = item.data_type
+                else:
+                    # Insert new FacilityItem
+                    new_item = FacilityItem(
+                        item_uuid=item.item_uuid,
+                        item_nm=item.item_nm,
+                        data_type=item.data_type,
+                        equipment_uuid=body.equipment_id,
+                        wdate=current_time
+                    )
+                    session.add(new_item)
+
+            session.commit()
+
+            updated_items = session.query(FacilityItem).filter(FacilityItem.equipment_uuid == body.equipment_id).all()
+            
+
+            return {"equipment": equipment, "items": updated_items}
+    
+    except Exception as e:
+        traceback.print_exc()
+        session.rollback()
+        raise e
+
+def facility_deletion_service(equipment_id: int):
+    try:
+        with Session() as session:
+            # Fetch equipment by ID
+            equipment = session.query(FacilityEquipment).filter_by(seq=equipment_id).first()
+            if not equipment:
+                raise ValueError("Equipment not found")
+
+            # Fetch items related to the equipment and delete them
+            items = session.query(FacilityItem).filter_by(equipment_uuid=equipment.equipment_uuid).all()
+            for item in items:
+                session.delete(item)
+
+            # Now delete the equipment itself
+            session.delete(equipment)
+            
+            cep_result = session.query(CepResult).filter_by(kafka_topic_uuid=equipment.kafka_topic_uuid).first()
+            if cep_result:
+                session.delete(cep_result)
+                
+            # Commit all changes
+            session.commit()
+
+            return {"message": "Deleted successfully"}
+
+    except SQLAlchemyError  as e:
+        # Rollback in case of error
+        session.rollback()
+        raise e
