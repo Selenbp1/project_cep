@@ -96,25 +96,25 @@ const EquipmentManage = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>No.</TableCell>
-                <TableCell>장비명</TableCell>
-                <TableCell>토픽명</TableCell>
-                <TableCell>IP</TableCell>
-                <TableCell>Port</TableCell>
-                <TableCell>사용여부</TableCell>
-                <TableCell>Actions</TableCell>
+                <TableCell align="center">No.</TableCell>
+                <TableCell align="center">장비명</TableCell>
+                <TableCell align="center">토픽명</TableCell>
+                <TableCell align="center">IP</TableCell>
+                <TableCell align="center">Port</TableCell>
+                <TableCell align="center">사용여부</TableCell>
+                <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {equipmentList.map((equip, index) => (
                 <TableRow key={equip.id}>
-                  <TableCell>{index + 1 + (page - 1) * rowsPerPage}</TableCell>
-                  <TableCell>{equip.title}</TableCell>
-                  <TableCell>{equip.topic_nm}</TableCell>
-                  <TableCell>{equip.ip}</TableCell>
-                  <TableCell>{equip.port}</TableCell>
-                  <TableCell>{equip.flag ? 'Y' : 'N'}</TableCell>
-                  <TableCell>
+                  <TableCell align="center">{index + 1 + (page - 1) * rowsPerPage}</TableCell>
+                  <TableCell>[{equip.id}]_{equip.title}</TableCell>
+                  <TableCell align="center">{equip.topic_nm}</TableCell>
+                  <TableCell align="center">{equip.ip}</TableCell>
+                  <TableCell align="center">{equip.port}</TableCell>
+                  <TableCell align="center">{equip.flag ? 'Y' : 'N'}</TableCell>
+                  <TableCell align="center">
                     <Button size="small" onClick={() => handleView(equip.id)}>상세보기</Button>
                     <Button size="small" onClick={() => handleEdit(equip.id)}>수정</Button>
                     <Button size="small" color="error" onClick={() => handleDelete(equip.id)}>삭제</Button>

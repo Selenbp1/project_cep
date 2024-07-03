@@ -2,27 +2,27 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Modal, Box, TextField, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination } from '@mui/material';
 import equipmentService from '../../services/equipmentService';
+import { v4 as uuidv4 } from 'uuid';
 
 const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUpdate }) => {
-  const [equipment, setEquipment] = useState({ name: '', description: '', vendor: '', topic: '', ip: '', port: '', isActive: true });
+  const [equipment, setEquipment] = useState({ equipment_nm: '', topic_nm: '', ip: '', port: '', flag: '', item: [] });
   const [items, setItems] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [editItemIndex, setEditItemIndex] = useState(-1);
 
   useEffect(() => {
     const fetchData = async () => {
       if (equipmentId) {
         try {
           const equipmentData = await equipmentService.getEquipmentById(equipmentId);
-          setEquipment(equipmentData);
-
-          const itemsData = await equipmentService.getItemsByEquipmentId(equipmentId);
-          setItems(itemsData);
+          setEquipment(equipmentData[0]);
+          setItems(equipmentData[0].item || []);
         } catch (error) {
           console.error('Error fetching equipment data:', error);
         }
       } else {
-        setEquipment({ name: '', description: '', vendor: '', topic: '', ip: '', port: '', isActive: true });
+        setEquipment({ equipment_nm: '', topic_nm: '', ip: '', port: '', flag: '', item: [] });
         setItems([]);
       }
     };
@@ -42,22 +42,26 @@ const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUp
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [fieldName]: value };
     setItems(newItems);
+    setEquipment((prevEquipment) => ({
+      ...prevEquipment,
+      item: newItems,
+    }));
   };
 
   const handleSave = async () => {
-    if (isEditMode) {
-      try {
+    try {
+      if (isEditMode) {
+        const updatedEquipment = { ...equipment, item: items };
         if (equipmentId) {
-          await equipmentService.updateEquipment(equipmentId, equipment);
-          await equipmentService.updateItems(equipmentId, items); // 예시 API 호출. 실제로는 적절한 API를 호출해야 함.
+          await equipmentService.updateEquipment(equipmentId, updatedEquipment);
         } else {
-          const newEquipment = await equipmentService.createEquipment(equipment);
-          await equipmentService.createItems(newEquipment.id, items);
+          await equipmentService.createEquipment(updatedEquipment);
         }
+        console.log("Equipment data:", updatedEquipment);
         onUpdate();
-      } catch (error) {
-        console.error('Error saving equipment:', error);
       }
+    } catch (error) {
+      console.error('Error saving equipment:', error);
     }
     handleClose();
   };
@@ -75,11 +79,34 @@ const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUp
     handleClose();
   };
 
-  const handleAddItem = () => {
-    setItems((prevItems) => [
-      ...prevItems,
-      { equipmentId: '', name: '', dataType: '', isActive: true }
-    ]);
+  const handleEditItem = (index) => {
+    setEditItemIndex(index);
+  };
+
+  const handleDeleteItem = (index) => {
+    const updatedItems = [...items];
+    updatedItems.splice(index, 1);
+    setItems(updatedItems);
+    setEquipment((prevEquipment) => ({
+      ...prevEquipment,
+      item: updatedItems,
+    }));
+    console.log("Updated items after deletion:", updatedItems);
+  };
+
+  const handleSaveItem = (index) => {
+    setEditItemIndex(-1);
+    console.log("Updated items after edit:", items);
+  };
+
+  const handleCancelEditItem = () => {
+    setEditItemIndex(-1);
+  };
+
+  const handleAddNewItem = () => {
+    const newItemObject = { id: null, item_uuid: uuidv4(), item_nm: '', data_type: '' }; 
+    setItems((prevItems) => [...prevItems, newItemObject]);
+    setEditItemIndex(items.length); // Focuses on the newly added item for editing
   };
 
   return (
@@ -100,8 +127,8 @@ const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUp
         </Typography>
         <TextField
           label="장비명"
-          name="name"
-          value={equipment.name}
+          name="equipment_nm"
+          value={equipment.equipment_nm}
           onChange={handleChange}
           fullWidth
           margin="normal"
@@ -109,8 +136,8 @@ const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUp
         />
         <TextField
           label="토픽명"
-          name="topic"
-          value={equipment.topic}
+          name="topic_nm"
+          value={equipment.topic_nm}
           onChange={handleChange}
           fullWidth
           margin="normal"
@@ -134,55 +161,67 @@ const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUp
           margin="normal"
           disabled={!isEditMode}
         />
-        <Typography variant="h6" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 6, mb: 2 }}>
+        <Typography variant="h6" sx={{ mt: 2 }}>
           아이템 정보
-          {isEditMode && (
-            <Button variant="outlined" color="inherit" onClick={handleAddItem}>
-              아이템 추가
-            </Button>
-          )}
         </Typography>
-        <TableContainer component={Paper}>
+        {isEditMode && (
+          <Button variant="outlined" onClick={handleAddNewItem} sx={{ mb: 2 }}>
+            아이템 추가
+          </Button>
+        )}
+        <TableContainer component={Paper} sx={{ mt: 2 }}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>No.</TableCell>
-                <TableCell>아이템명</TableCell>
-                <TableCell>데이터타입</TableCell>
-                <TableCell>사용여부</TableCell>
+                <TableCell align="center">No.</TableCell>
+                <TableCell align="center">아이템명</TableCell>
+                <TableCell align="center">데이터타입</TableCell>
+                {isEditMode && <TableCell align="center">Actions</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
-              {(rowsPerPage > 0
-                ? items.slice(currentPage * rowsPerPage, currentPage * rowsPerPage + rowsPerPage)
-                : items
-              ).map((item, index) => (
+              {items.slice(currentPage * rowsPerPage, currentPage * rowsPerPage + rowsPerPage).map((item, index) => (
                 <TableRow key={index}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell>
-                    <TextField
-                      value={item.name}
-                      onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-                      fullWidth
-                      disabled={!isEditMode}
-                    />
+                  <TableCell align="center">{index + 1}</TableCell>
+                  <TableCell align="center">
+                    {editItemIndex === index ? (
+                      <TextField
+                        size="small"
+                        value={item.item_nm}
+                        onChange={(e) => handleItemChange(index, 'item_nm', e.target.value)}
+                        style={{ width: '100px', marginLeft: '8px' }}
+                      />
+                    ) : (
+                      item.item_nm
+                    )}
                   </TableCell>
-                  <TableCell>
-                    <TextField
-                      value={item.dataType}
-                      onChange={(e) => handleItemChange(index, 'dataType', e.target.value)}
-                      fullWidth
-                      disabled={!isEditMode}
-                    />
+                  <TableCell align="center">
+                    {editItemIndex === index ? (
+                      <TextField
+                        size="small"
+                        value={item.data_type}
+                        onChange={(e) => handleItemChange(index, 'data_type', e.target.value)}
+                        style={{ width: '100px', marginLeft: '8px' }}
+                      />
+                    ) : (
+                      item.data_type
+                    )}
                   </TableCell>
-                  <TableCell>
-                    <TextField
-                      value={item.isActive ? 'Yes' : 'No'}
-                      onChange={(e) => handleItemChange(index, 'isActive', e.target.value === 'Yes')}
-                      fullWidth
-                      disabled={!isEditMode}
-                    />
-                  </TableCell>
+                  {isEditMode && (
+                    <TableCell align="center">
+                      {editItemIndex === index ? (
+                        <>
+                          <Button size="small" onClick={() => handleSaveItem(index)}>저장</Button>
+                          <Button size="small" onClick={handleCancelEditItem}>취소</Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button size="small" onClick={() => handleEditItem(index)}>수정</Button>
+                          <Button size="small" onClick={() => handleDeleteItem(index)}>삭제</Button>
+                        </>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -192,21 +231,21 @@ const EquipmentDetailModal = ({ open, handleClose, equipmentId, isEditMode, onUp
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
           count={items.length}
-          onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}
           page={currentPage}
+          onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
-        <Box sx={{ display: 'flex', justifyContent: 'right', alignItems: 'center', mt: 2 }}>
-          {isEditMode && (
+        {isEditMode && (
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
             <Button variant="contained" color="primary" onClick={handleSave}>
               저장
             </Button>
-          )}
-          <Button variant="outlined" color="secondary" onClick={handleCloseModal}>
-            닫기
-          </Button>
-        </Box>
+            <Button variant="outlined" onClick={handleCloseModal}>
+              취소
+            </Button>
+          </Box>
+        )}
       </Box>
     </Modal>
   );
@@ -216,7 +255,7 @@ EquipmentDetailModal.propTypes = {
   open: PropTypes.bool.isRequired,
   handleClose: PropTypes.func.isRequired,
   equipmentId: PropTypes.number,
-  isEditMode: PropTypes.bool.isRequired,
+  isEditMode: PropTypes.bool,
   onUpdate: PropTypes.func.isRequired,
 };
 
