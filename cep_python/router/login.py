@@ -1,9 +1,9 @@
 from email.header import Header
 import traceback
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from cep_python.service.user_service.login_service import verify_token
+from cep_python.service.user_service.login_service import generate_token, verify_token
 from database.conn import *
 from database.model_class import * 
 
@@ -31,7 +31,7 @@ async def login_page(request: Request):
 
 @router.post("/login", response_class=JSONResponse)
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    user_instance = session.query(user).filter(user.username == username).first()
+    user_instance = session.query(User).filter(User.username == username).first()
     
     if user_instance:
         if pwd_context.verify(password, user_instance.password):

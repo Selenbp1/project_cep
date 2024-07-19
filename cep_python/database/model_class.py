@@ -88,25 +88,25 @@ class RuleAlgorithmOrderType(Base):
     order_lower_limit = Column(BigInteger, nullable=False)
     order_upper_limit = Column(BigInteger, nullable=False)
 
-class cep_alaram(Base):
+class CepAlaram(Base):
     __tablename__ = 'cep_alaram'
 
     item_uuid = Column(String(100), primary_key=True, nullable=False)
     alaram_flag = Column(String(5), nullable=False)
 
-class item_data(Base):
+class ItemData(Base):
     __tablename__ = 'item_data'
 
     seq = Column(Integer, primary_key=True, autoincrement=True)
     item_uuid = Column(String(100), primary_key=True, nullable=False)
     item_nm = Column(String(100), nullable=False)
-    raw_value = Column(BigInteger, nullable=False)
-    feature_value = Column(BigInteger, nullable=False)
+    raw_value = Column(String(100), nullable=False)
+    feature_value = Column(String(100), nullable=False)
     error_value = Column(String(100), nullable=False)
     wdate = Column(TIMESTAMP)
     mdate = Column(TIMESTAMP)
 
-class cep_item_log(Base):
+class CepItemLog(Base):
     __tablename__ = 'cep_item_log'
 
     seq = Column(Integer, primary_key=True, autoincrement=True)

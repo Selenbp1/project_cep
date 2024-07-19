@@ -40,7 +40,7 @@ class FacilityCreationBody(BaseModel):
     item: List[Item]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "equipment_nm": "string",
                 "topic_id": "string",
@@ -71,7 +71,7 @@ class FacilityUpdatenBody(BaseModel):
     item: List[Item]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "equipment_id": "string",
                 "equipment_nm": "string",

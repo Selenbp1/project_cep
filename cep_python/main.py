@@ -8,6 +8,7 @@ import router.facility_api as facility_api
 import router.data_api as data_api
 import router.common_code_api as common_code_api
 import router.user_api as user_api
+# import router.login as login
 
 app = FastAPI(
     title="CEP_API"
@@ -28,3 +29,4 @@ app.include_router(rule_api.router)
 app.include_router(facility_api.router)
 app.include_router(data_api.router)
 app.include_router(common_code_api.router)
+# app.include_router(login.router)
