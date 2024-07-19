@@ -21,12 +21,16 @@ const fetchRuleData = async () => {
   }
 };
 
-const fetchDetailDataByRuleId = async (ruleId) => {
+const fetchDetailDataByRuleId = async (item_id, page, pageSize) => {
   try {
-    const response = await instance.get(`${API_URL}/${ruleId}/details`);
-    return response.data;
+    const response = await instance.get(`${API_URL}/detail/${item_id}?page=${page}&pageSize=${pageSize}`);
+    console.log('API full response:', response);  // Full response to debug structure
+    return {
+      details: response.data, // Assuming response.data contains details
+      totalCount: response.data.totalCont || response.data.totalCount || response.totalCount || 0 // Adjust based on actual structure
+    };
   } catch (error) {
-    console.error(`Error fetching detail data for rule ID ${ruleId}:`, error.message);
+    console.error(`Error fetching detail data for rule ID ${item_id}:`, error.message);
     throw new Error('Failed to fetch detail data');
   }
 };

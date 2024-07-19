@@ -15,18 +15,18 @@ export const getRules = async (page, pageSize) => {
   try {
     const response = await instance.get(API_URL, {
       params: {
-        _page: page,
-        _limit: pageSize,
+        page,
+        pageSize,
       },
     });
-    const total = Number(response.headers['x-total-count']);
-    const rules = response.data;
-    return { rules, total };
+    console.log("Raw API Response:", response.data); // Add this line
+    return response.data; 
   } catch (error) {
     console.error('Error fetching rules:', error);
-    throw new Error('Failed to fetch rules');
+    throw error;
   }
 };
+
 
 export const addRule = async (newRule) => {
   try {
