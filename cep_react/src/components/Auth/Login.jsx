@@ -3,17 +3,20 @@ import { Container, TextField, Button, Box, Typography, Alert } from '@mui/mater
 import { useNavigate } from 'react-router-dom';
 import '../../styles/Login.css'; 
 import { login } from '../../services/loginService';
+import useAuth from '../../hooks/useAuth';
 
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login: setToken } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await login(username, password); 
+      const token = await login(username, password); 
+      setToken(token);  // 사용자가 로그인하면 토큰을 저장
       onLogin(username);
       const lastPath = localStorage.getItem('lastPath') || '/home';
       navigate(lastPath);
@@ -25,7 +28,7 @@ const Login = ({ onLogin }) => {
   return (
     <Container maxWidth="sm">
       <Box className="login-container">
-        <Typography variant="h4" component="h1" className="login-title"  gutterBottom>
+        <Typography variant="h4" component="h1" className="login-title" gutterBottom>
           Login
         </Typography>
         {error && <Alert severity="error" className="error-alert">{error}</Alert>}
