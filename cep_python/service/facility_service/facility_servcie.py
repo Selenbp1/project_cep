@@ -33,7 +33,6 @@ def total_equipment_list_service(page: int, pageSize: int):
         traceback.print_exc()
         return {"data" : str(e)}
 
-# 장비명, 토픽명, ip, port, 아이템명, 데이터 타입, 사용여부 
 def total_item_list_service(equipment_id):
     try:
         
@@ -105,7 +104,7 @@ def facility_creation_service(body):
             session.add(facility_equipment_add)
             session.add_all(facility_items)
             session.commit()
-
+            session.close()
         return {"data": "ok"}
     
     except Exception as e:
@@ -139,18 +138,15 @@ def facility_update_service(equipment_id, body):
                 
             existing_item_ids = [item.id for item in items if item.id is not None]
 
-            # Delete FacilityItem entries not in the current list
             session.query(FacilityItem).filter(FacilityItem.equipment_uuid == body.equipment_id, FacilityItem.seq.notin_(existing_item_ids)).delete(synchronize_session=False)
 
             for item in items:
                 if item.id is not None:
-                    # Update existing FacilityItem
                     facility_item = session.query(FacilityItem).filter(FacilityItem.seq == item.id).first()
                     if facility_item:
                         facility_item.item_nm = item.item_nm
                         facility_item.data_type = item.data_type
                 else:
-                    # Insert new FacilityItem
                     new_item = FacilityItem(
                         item_uuid=item.item_uuid,
                         item_nm=item.item_nm,
@@ -161,7 +157,7 @@ def facility_update_service(equipment_id, body):
                     session.add(new_item)
 
             session.commit()
-
+            session.close()
             updated_items = session.query(FacilityItem).filter(FacilityItem.equipment_uuid == body.equipment_id).all()
             
 
@@ -175,26 +171,22 @@ def facility_update_service(equipment_id, body):
 def facility_deletion_service(equipment_id: int):
     try:
         with Session() as session:
-            # Fetch equipment by ID
             equipment = session.query(FacilityEquipment).filter_by(seq=equipment_id).first()
             if not equipment:
                 raise ValueError("Equipment not found")
 
-            # Fetch items related to the equipment and delete them
             items = session.query(FacilityItem).filter_by(equipment_uuid=equipment.equipment_uuid).all()
             for item in items:
                 session.delete(item)
 
-            # Now delete the equipment itself
             session.delete(equipment)
             
             cep_result = session.query(CepResult).filter_by(kafka_topic_uuid=equipment.kafka_topic_uuid).first()
             if cep_result:
                 session.delete(cep_result)
                 
-            # Commit all changes
             session.commit()
-
+            session.close()
             return {"message": "Deleted successfully"}
 
     except SQLAlchemyError  as e:

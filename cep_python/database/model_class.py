@@ -58,48 +58,23 @@ class RuleAlgorithm(Base):
 
     seq = Column(Integer, primary_key=True, autoincrement=True)
     item_uuid = Column(String(100), nullable=False)
-    rule_uuid = Column(String(100), nullable=False)
+    algorithm_id = Column(String(100), nullable=False)
     rule_nm = Column(String(100), nullable=False)
     size_count = Column(BigInteger, nullable=False)
-
-class RuleAlgorithmFeature(Base):
-    __tablename__ = 'rule_algorithm_feature'
-
-    seq = Column(Integer, primary_key=True, autoincrement=True)
-    item_uuid = Column(String(100), nullable=False)
-    rule_uuid = Column(String(100), nullable=False)
     feature_value_id = Column(String(100), nullable=False)
-    feature_value_nm = Column(String(100), nullable=False)
-    feature_low_value = Column(BigInteger, nullable=False)
-    feature_high_value = Column(BigInteger, nullable=False) 
-
-class RuleAlgorithmStdev(Base):
-    __tablename__ = 'rule_algorithm_stdev'
-
-    item_uuid = Column(String(100), primary_key=True, nullable=True)
-    feature_value_id = Column(String(100),  nullable=False)
-    stdev_value = Column(BigInteger, nullable=False)
-
-class RuleAlgorithmOrderType(Base):
-    __tablename__ = 'rule_algorithm_order_type'
-
-    item_uuid = Column(String(100), primary_key=True, nullable=False)
-    order_type_flag = Column(BigInteger, nullable=False)
-    order_lower_limit = Column(BigInteger, nullable=False)
-    order_upper_limit = Column(BigInteger, nullable=False)
-
-class CepAlaram(Base):
-    __tablename__ = 'cep_alaram'
-
-    item_uuid = Column(String(100), primary_key=True, nullable=False)
+    feature_low_value = Column(BigInteger, nullable=True)
+    feature_high_value = Column(BigInteger, nullable=True) 
+    order_type_flag = Column(String(10), nullable=False)
+    order_lower_limit = Column(BigInteger, nullable=True)
+    order_upper_limit = Column(BigInteger, nullable=True)
     alaram_flag = Column(String(5), nullable=False)
 
 class ItemData(Base):
     __tablename__ = 'item_data'
 
     seq = Column(Integer, primary_key=True, autoincrement=True)
-    item_uuid = Column(String(100), primary_key=True, nullable=False)
-    item_nm = Column(String(100), nullable=False)
+    rule_id = Column(String(100), primary_key=True, nullable=False)
+    rule_nm = Column(String(100), nullable=False)
     raw_value = Column(String(100), nullable=False)
     feature_value = Column(String(100), nullable=False)
     error_value = Column(String(100), nullable=False)

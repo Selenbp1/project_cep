@@ -4,6 +4,7 @@ from database.conn import Session
 from database.model_class import User, UserInfo, UserPermission
 from sqlalchemy.orm import joinedload
 from service.user_service.models import UserCreateRequest, UserUpdateRequest
+import bcrypt
 
 def users_list_service(page: int, pageSize: int):
     try:
@@ -15,10 +16,8 @@ def users_list_service(page: int, pageSize: int):
                        .offset(offset)\
                        .limit(pageSize)
                        
-        # Fetch all users with their info and permissions
         users = query.all()
         
-        # Prepare the response data
         response = []
         for u in users:
             user_data = {
@@ -31,13 +30,8 @@ def users_list_service(page: int, pageSize: int):
             }
             response.append(user_data)
         
-        # Total count of users
         total = session.query(User).count()
-        
-        # Close the session
         session.close()
-        
-        # Return the result as a JSON object
         result = {"users": response, "total": total}
         return result
         
@@ -46,31 +40,33 @@ def users_list_service(page: int, pageSize: int):
         traceback.print_exc()
         return {"users": [], "total": 0}
     
+def hash_password(password: str) -> str:
+    """Hash a password using bcrypt."""
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(stored_password: str, provided_password: str) -> bool:
+    """Verify a password against a stored hash."""
+    return bcrypt.checkpw(provided_password.encode('utf-8'), stored_password.encode('utf-8'))
 
 def create_user_service(user_data: UserCreateRequest):
     session = Session()
     try:
-        # Create a new user object
-        new_user = User(username=user_data.username, password=user_data.password)
+        hashed_password = hash_password(user_data.password)
+        new_user = User(username=user_data.username, password=hashed_password)
 
-        # Add user info if provided
         if user_data.info:
             new_user.info = UserInfo(
                 full_name=user_data.info.full_name,
                 email=user_data.info.email,
                 contact=user_data.info.contact
             )
-
-        # Add user permissions if provided
         if user_data.permission:
             new_user.permissions = UserPermission(permission=user_data.permission)
 
-        # Add new user to session, commit changes, and refresh the object to get its ID
         session.add(new_user)
         session.commit()
         session.refresh(new_user)
-
-        # Prepare the response data
+        session.close()
         created_user = {
             "id": new_user.id,
             "username": new_user.username,
@@ -97,7 +93,7 @@ def update_user_service(user_id: int, updated_user_data: UserUpdateRequest):
             raise HTTPException(status_code=404, detail=f"User with ID {user_id} not found")
         
         if updated_user_data.password:
-            user_to_update.password = updated_user_data.password
+            user_to_update.password = hash_password(updated_user_data.password)
             
         if 'username' in updated_user_data:
             user_to_update.username = updated_user_data.username
