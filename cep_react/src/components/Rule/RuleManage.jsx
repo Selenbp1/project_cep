@@ -4,6 +4,7 @@ import { Typography, Button, Table, TableBody, TableCell, TableContainer, TableH
 import RuleModal from './RuleModal';
 import { getRules, addRule, editRule, deleteRule } from '../../services/ruleService';
 import '../../styles/Scroll.css';
+import { useNavigate } from 'react-router-dom'; 
 
 const RuleManage = () => {
   const [rules, setRules] = useState([]);
@@ -13,19 +14,14 @@ const RuleManage = () => {
   const [pageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const totalPages = Math.ceil(total / pageSize);
-
+  const navigate = useNavigate(); 
   
   const fetchRules = useCallback(async () => {
     try {
       const response = await getRules(page, pageSize);
-      console.log("API Response:", response);
-      
-      // Assuming response is an array
-      const rulesData = response; // Adjust this line
-      const fetchedTotal = response.length; // Assuming total is the length of the array
-  
-      console.log("Fetched rules:", rulesData);
-      setRules(rulesData || []);
+      const { rules: rulesData, total: fetchedTotal } = response;
+      const sortedRules = rulesData.sort((a, b) => a.id - b.id);
+      setRules(sortedRules  || []);
       setTotal(fetchedTotal || 0); 
     } catch (error) {
       console.error('Error fetching rules:', error.message);
@@ -33,28 +29,23 @@ const RuleManage = () => {
   }, [page, pageSize]);
 
   useEffect(() => {
-    console.log("Fetching rules for page:", page);  // Add this line
     fetchRules();
   }, [fetchRules, page]);
 
   const handleAddRule = async (newRule) => {
     try {
-      const addedRule = await addRule(newRule);
-      console.log("Added rule:", addedRule);  // Add this line
-      setRules((prevRules) => [...prevRules, addedRule]);
+      await addRule(newRule);
+      fetchRules(); 
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error adding rule:', error.message);
     }
   };
-  
+
   const handleEditRule = async (updatedRule) => {
     try {
-      const editedRule = await editRule(updatedRule);
-      console.log("Edited rule:", editedRule);  // Add this line
-      setRules((prevRules) =>
-        prevRules.map((rule) => (rule.id === editedRule.id ? editedRule : rule))
-      );
+      await editRule(updatedRule);
+      fetchRules(); 
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error editing rule:', error.message);
@@ -64,8 +55,7 @@ const RuleManage = () => {
   const handleDeleteRule = async (ruleId) => {
     try {
       await deleteRule(ruleId);
-      console.log("Deleted rule ID:", ruleId);  // Add this line
-      setRules((prevRules) => prevRules.filter((rule) => rule.id !== ruleId));
+      fetchRules(); 
     } catch (error) {
       console.error('Error deleting rule:', error.message);
     }
@@ -114,16 +104,16 @@ const RuleManage = () => {
             {rules.length > 0 ? (
               rules.map((rule, index) => (
                 <TableRow key={rule.id}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell>[{rule.id}]_{rule.rule_nm}</TableCell>
-                  <TableCell>{rule.equipment_nm}</TableCell>
-                  <TableCell>{rule.item_nm}</TableCell>
-                  <TableCell>{rule.code_nm}</TableCell>
+                  <TableCell>{(page - 1) * pageSize + index + 1}</TableCell>
+                  <TableCell>[{rule.id}]_{rule.ruleNm}</TableCell>
+                  <TableCell>{rule.equipmentNm}</TableCell>
+                  <TableCell>{rule.itemNm}</TableCell>
+                  <TableCell>{rule.algorithmNm}</TableCell>
                   <TableCell>
-                    {rule.feature_nm} (
-                    {rule.feature_low_value} ~ {rule.feature_high_value})
+                    {rule.featureNm} (
+                    {rule.lowerValue} ~ {rule.upperValue})
                   </TableCell>
-                  <TableCell>{rule.alaram_flag ? 'Y' : 'N'}</TableCell>
+                  <TableCell>{rule.alaramFlag ? 'Y' : 'N'}</TableCell>
                   <TableCell>
                     <Button
                       variant="contained"
@@ -137,7 +127,7 @@ const RuleManage = () => {
                     <Button
                       variant="contained"
                       color="error"
-                      onClick={() => handleDeleteRule(rule.item_id)}
+                      onClick={() => handleDeleteRule(rule.id)}
                     >
                       삭제
                     </Button>
@@ -180,7 +170,14 @@ const RuleManage = () => {
         >
           <RuleModal
             rule={selectedRule}
-            onSave={selectedRule ? handleEditRule : handleAddRule}
+            onSave={(rule) => {
+              if (selectedRule) {
+                handleEditRule(rule);
+              } else {
+                handleAddRule(rule);
+              }
+              navigate('/list'); // 저장 후 리스트 페이지로 이동
+            }}
             onClose={() => setIsModalOpen(false)}
           />
         </Box>

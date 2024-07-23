@@ -33,8 +33,9 @@ const RuleResultsList = () => {
     const loadRuleData = async () => {
       setLoading(true);
       try {
-        const data = await fetchRuleData();
-        setRuleData(data);
+        const data = await fetchRuleData(page, itemsPerPage);
+        const sortedRules = data.rules.sort((a, b) => a.id - b.id);
+        setRuleData(sortedRules); 
       } catch (error) {
         console.error('Error loading rule data:', error.message);
       } finally {
@@ -43,32 +44,31 @@ const RuleResultsList = () => {
     };
 
     loadRuleData();
-  }, []);
+  }, [page]);
 
   const handlePageChange = (event, value) => {
     setPage(value);
     setSelectedRule(null);
   };
 
-  const handleDetailPageChange = async (item_uuid, value) => {
+  const handleDetailPageChange = async (id, value) => {
     setDetailPages((prev) => ({
       ...prev,
-      [item_uuid]: value,
+      [id]: value,
     }));
     try {
-      console.log(`Fetching detail page ${value} for rule ID ${item_uuid}`);
-      const { details, totalCount } = await fetchDetailDataByRuleId(item_uuid, value, detailItemsPerPage);
-      console.log('Fetched Detail Data:', details, totalCount);
+      const { details, totalCount } = await fetchDetailDataByRuleId(id, value, detailItemsPerPage);
+      const sortedDetails = details.sort((a, b) => a.id - b.id);
       setDetailData((prev) => ({
         ...prev,
-        [item_uuid]: {
-          ...prev[item_uuid],
-          [value]: details,
+        [id]: {
+          ...prev[id],
+          [value]: sortedDetails,
         },
       }));
-      setDetailTotalCounts((prev) => ({ ...prev, [item_uuid]: totalCount }));
+      setDetailTotalCounts((prev) => ({ ...prev, [id]: totalCount }));
     } catch (error) {
-      console.error(`Error loading detail data for rule UUID ${item_uuid}:`, error.message);
+      console.error(`Error loading detail data for rule UUID ${id}:`, error.message);
     }
   };
 
@@ -77,19 +77,19 @@ const RuleResultsList = () => {
       setSelectedRule(null);
     } else {
       setSelectedRule(rule);
-      if (!detailPages[rule.item_id]) {
-        setDetailPages((prev) => ({ ...prev, [rule.item_id]: 1 }));
+      if (!detailPages[rule.id]) {
+        setDetailPages((prev) => ({ ...prev, [rule.id]: 1 }));
         try {
-          const { details, totalCount } = await fetchDetailDataByRuleId(rule.item_id, 1, detailItemsPerPage);
+          const { details, totalCount } = await fetchDetailDataByRuleId(rule.id, 1, detailItemsPerPage);
           setDetailData((prev) => ({
             ...prev,
-            [rule.item_id]: {
+            [rule.id]: {
               1: details,
             },
           }));
-          setDetailTotalCounts((prev) => ({ ...prev, [rule.item_id]: totalCount }));
+          setDetailTotalCounts((prev) => ({ ...prev, [rule.id]: totalCount }));
         } catch (error) {
-          console.error(`Error loading detail data for rule ID ${rule.item_id}:`, error.message);
+          console.error(`Error loading detail data for rule ID ${rule.id}:`, error.message);
         }
       }
     }
@@ -97,11 +97,10 @@ const RuleResultsList = () => {
 
   const slicedData = ruleData.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
-  const getDetailDataByRuleId = (item_uuid) => {
-    const detailPagesData = detailData[item_uuid] || {};
-    const currentPage = detailPages[item_uuid] || 1;
+  const getDetailDataByRuleId = (id) => {
+    const detailPagesData = detailData[id] || {};
+    const currentPage = detailPages[id] || 1;
     const data = detailPagesData[currentPage] || [];
-    console.log('Detail Data for page', currentPage, ':', data);
     return data;
   };
 
@@ -132,11 +131,11 @@ const RuleResultsList = () => {
               <React.Fragment key={rule.id}>
                 <TableRow onClick={() => handleRuleClick(rule)} style={{ cursor: 'pointer' }}>
                   <TableCell>{(page - 1) * itemsPerPage + index + 1}</TableCell>
-                  <TableCell>[{rule.id}]_{rule.rule_nm}</TableCell>
-                  <TableCell>{rule.equipment_nm}</TableCell>
-                  <TableCell>{rule.item_nm}</TableCell>
-                  <TableCell>{rule.rule_nm}</TableCell>
-                  <TableCell>{rule.feature_nm}</TableCell>
+                  <TableCell>[{rule.id}]_{rule.ruleNm}</TableCell>
+                  <TableCell>{rule.equipmentNm}</TableCell>
+                  <TableCell>{rule.itemNm}</TableCell>
+                  <TableCell>{rule.ruleNm}</TableCell>
+                  <TableCell>{rule.featureNm}</TableCell>
                   <TableCell>
                     {selectedRule === rule ? (
                       <IconButton size="small" onClick={() => setSelectedRule(null)}>
@@ -167,13 +166,13 @@ const RuleResultsList = () => {
                               </TableRow>
                             </TableHead>
                             <TableBody>
-                            {getDetailDataByRuleId(rule.item_id).map((detail, detailIndex) => (
+                            {getDetailDataByRuleId(rule.id).map((detail, detailIndex) => (
                                 <TableRow key={detail.id}>
-                                  <TableCell>{(detailPages[rule.item_id] - 1) * detailItemsPerPage + detailIndex + 1}</TableCell>
+                                  <TableCell>{(detailPages[rule.id] - 1) * detailItemsPerPage + detailIndex + 1}</TableCell>
                                   <TableCell>{detail.wdate}</TableCell>
-                                  <TableCell>{detail.raw_value}</TableCell>
-                                  <TableCell>{detail.feature_value}</TableCell>
-                                  <TableCell>{detail.error_value}</TableCell>
+                                  <TableCell>{detail.rawValue}</TableCell>
+                                  <TableCell>{detail.featureValue}</TableCell>
+                                  <TableCell>{detail.errorValue}</TableCell>
                                 </TableRow>
                                ))}
                             </TableBody>
@@ -181,11 +180,11 @@ const RuleResultsList = () => {
                         </TableContainer>
                         <Box display="flex" justifyContent="center" mt={2}>
                           <Pagination
-                            count={Math.ceil((detailTotalCounts[rule.item_id] || 0) / detailItemsPerPage)}
-                            page={detailPages[rule.item_id] || 1}
+                            count={Math.ceil((detailTotalCounts[rule.id] || 0) / detailItemsPerPage)}
+                            page={detailPages[rule.id] || 1}
                             onChange={(event, value) => {
-                              console.log(`Changing page to: ${value} for rule ID ${rule.item_id}`);
-                              handleDetailPageChange(rule.item_id, value);
+                              console.log(`Changing page to: ${value} for rule ID ${rule.id}`);
+                              handleDetailPageChange(rule.id, value);
                             }}
                             color="primary"
                             size="small"

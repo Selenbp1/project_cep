@@ -19,7 +19,7 @@ export const getRules = async (page, pageSize) => {
         pageSize,
       },
     });
-    console.log("Raw API Response:", response.data); // Add this line
+    console.log("Raw API Response:", response.data); 
     return response.data; 
   } catch (error) {
     console.error('Error fetching rules:', error);

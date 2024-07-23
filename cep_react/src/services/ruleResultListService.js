@@ -11,9 +11,9 @@ const instance = axios.create({
   },
 });
 
-const fetchRuleData = async () => {
+const fetchRuleData = async (page, pageSize) => {
   try {
-    const response = await instance.get(API_URL);
+    const response = await instance.get(`${API_URL}?page=${page}&pageSize=${pageSize}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching rule data:', error.message);
@@ -21,16 +21,15 @@ const fetchRuleData = async () => {
   }
 };
 
-const fetchDetailDataByRuleId = async (item_id, page, pageSize) => {
+const fetchDetailDataByRuleId = async (id, page, pageSize) => {
   try {
-    const response = await instance.get(`${API_URL}/detail/${item_id}?page=${page}&pageSize=${pageSize}`);
-    console.log('API full response:', response);  // Full response to debug structure
+    const response = await instance.get(`${API_URL}/detail/${id}?page=${page}&pageSize=${pageSize}`);
     return {
-      details: response.data, // Assuming response.data contains details
-      totalCount: response.data.totalCont || response.data.totalCount || response.totalCount || 0 // Adjust based on actual structure
+      details: response.data.details,
+      totalCount: response.data.totalCount
     };
   } catch (error) {
-    console.error(`Error fetching detail data for rule ID ${item_id}:`, error.message);
+    console.error(`Error fetching detail data for rule ID ${id}:`, error.message);
     throw new Error('Failed to fetch detail data');
   }
 };
